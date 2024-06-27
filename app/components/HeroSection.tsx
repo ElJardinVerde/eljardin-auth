@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import ThemeToggle from "../components/ThemeToggle";
 import { useTheme } from "../context/ThemeContext";
-import { auth, db } from "../api/firebaseConfig"; // Make sure this import is correct
+import { auth, db } from "../api/firebaseConfig";
 import {
   collection,
   query,
@@ -16,6 +16,7 @@ import {
   updateDoc,
   doc,
 } from "firebase/firestore";
+import { DotBackgroundDemo } from "./ui/background";
 
 type QrScannerProps = {
   delay?: number;
@@ -113,136 +114,148 @@ export function Authentification() {
   };
 
   return (
-    <div className="min-h-screen relative w-full overflow-hidden bg-slate-900 flex flex-col items-center justify-center">
-      <ThemeToggle />
-      <div className="absolute inset-0 w-full h-full bg-slate-900 z-20 [mask-image:radial-gradient(transparent,white)] pointer-events-none" />
-      <h1 className="animate-fade-in text-center text-6xl text-white relative z-20">
-        Welcome to ElJardin
-        <span className="text-green-300">Verde </span>
-        Club!
-      </h1>
-      <p className="text-center mt-6 text-neutral-300 relative z-20">
-        Please scan your QR code here!
-      </p>
-      {!showScanner && (
-        <div className="relative z-20 pt-10">
-          <Button
-            variant="outline"
-            className="w-64"
-            onClick={() => setShowScanner(true)}
-          >
-            Scan QR
-          </Button>
-        </div>
-      )}
-      {showScanner && (
-        <div className="relative z-20 pt-10 w-full flex flex-col items-center">
-          <QrScanner
-            delay={300}
-            onError={handleError}
-            onScan={handleScan}
-            style={previewStyle}
-          />
-          <Button variant="outline" className="mt-4" onClick={closeScanner}>
-            Close Camera
-          </Button>
-        </div>
-      )}
-      {cameraError && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="bg-white p-8 rounded-lg shadow-lg text-center flex flex-col items-center"
-          >
-            <p className="text-lg font-medium text-red-500">
-              Failed to open camera. Please try again.
-            </p>
-            <Button variant="outline" className="mt-4" onClick={closeModal}>
-              Try Again
-            </Button>
-          </motion.div>
-        </div>
-      )}
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="bg-white p-8 rounded-lg shadow-lg text-center flex flex-col items-center"
-          >
-            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-500 mb-4"></div>
-            <p className="text-lg font-medium">Checking QR code...</p>
-          </motion.div>
-        </div>
-      )}
-      <AnimatePresence>
-        {isValidQR !== null && (
-          <div className="fixed inset-0 mx-2 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="bg-white p-8 rounded-lg shadow-lg text-center"
+    <div className="h-screen w-full dark:bg-black bg-white dark:bg-dot-white/[0.2] bg-dot-black/[0.2] relative flex items-center justify-center">
+      <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
+
+      <div className="relative z-20 flex flex-col items-center justify-center">
+        <ThemeToggle />
+
+        <h1 className="animate-fade-in text-center text-6xl dark:text-white  relative z-20">
+          Welcome to ElJardin
+          <span className="text-green-300">Verde </span>
+          Club!
+        </h1>
+        <p className="text-center mt-6 text-gray-900 dark:text-gray-300 relative z-20">
+          Please scan your QR code here!
+        </p>
+
+        {!showScanner && (
+          <div className="relative z-20 pt-10">
+            <Button
+              variant="outline"
+              className="w-64"
+              onClick={() => setShowScanner(true)}
             >
-              {isValidQR ? (
-                <>
-                  <h2 className="text-2xl font-bold text-green-500 mb-4">
-                    Welcome to ElJardinVerde Club!
-                  </h2>
-                  <p className="text-lg">Your access has been approved!</p>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="mt-4"
-                  >
-                    <div className="text-green-500 animate-bounce">🎉</div>
-                  </motion.div>
-                </>
-              ) : (
-                <>
-                  <h2 className="text-2xl font-bold text-red-500 mb-4">
-                    QR Code Invalid
-                  </h2>
-                  <p className="text-lg">
-                    Your QR code is not valid or it has been already used! Please try again!
-                  </p>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="mt-4"
-                  >
-                    <div className="text-red-500 animate-bounce">⚠️</div>
-                  </motion.div>
-                  <Button
-                    variant="outline"
-                    className="mt-4"
-                    onClick={closeModal}
-                  >
-                    Try Again
-                  </Button>
-                </>
-              )}
+              Scan QR
+            </Button>
+          </div>
+        )}
+        {showScanner && (
+          <div className="relative z-20 pt-10 w-full flex flex-col items-center">
+            <QrScanner
+              delay={300}
+              onError={handleError}
+              onScan={handleScan}
+              style={previewStyle}
+            />
+            <Button variant="outline" className="mt-4" onClick={closeScanner}>
+              Close Camera
+            </Button>
+          </div>
+        )}
+        {cameraError && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="bg-white p-8 rounded-lg shadow-lg text-center flex flex-col items-center"
+            >
+              <p className="text-lg font-medium text-red-500">
+                Failed to open camera. Please try again.
+              </p>
+              <Button variant="outline" className="mt-4" onClick={closeModal}>
+                Try Again
+              </Button>
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
-      <p className="text-center mt-6 text-neutral-300 relative z-20">
-        Not a member yet?{" "}
-        <a href="/signup" className="text-green-300 underline">
-          Sign Up
-        </a>
-      </p>
-      <p className="text-center mt-6 text-neutral-300 relative z-20">
-        Are you a member?{" "}
-        <a href="/login" className="text-green-300 underline">
-          Login here
-        </a>
-      </p>
+        {loading && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="bg-white p-8 rounded-lg shadow-lg text-center flex flex-col items-center"
+            >
+              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-500 mb-4"></div>
+              <p className="text-lg font-medium">Checking QR code...</p>
+            </motion.div>
+          </div>
+        )}
+        <AnimatePresence>
+          {isValidQR !== null && (
+            <div className="fixed inset-0 mx-2 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="bg-white p-8 rounded-lg shadow-lg text-center"
+              >
+                {isValidQR ? (
+                  <>
+                    <h2 className="text-2xl font-bold text-green-500 mb-4">
+                      Welcome to ElJardinVerde Club!
+                    </h2>
+                    <p className="text-lg">Your access has been approved!</p>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="mt-4"
+                    >
+                      <div className="text-green-500 animate-bounce">🎉</div>
+                    </motion.div>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-2xl font-bold text-red-500 mb-4">
+                      QR Code Invalid
+                    </h2>
+                    <p className="text-lg">
+                      Your QR code is not valid or it has been already used!
+                      Please try again!
+                    </p>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="mt-4"
+                    >
+                      <div className="text-red-500 animate-bounce">⚠️</div>
+                    </motion.div>
+                    <Button
+                      variant="outline"
+                      className="mt-4"
+                      onClick={closeModal}
+                    >
+                      Try Again
+                    </Button>
+                  </>
+                )}
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+        <p className="text-center mt-6 text-gray-900 dark:text-gray-300 relative z-20">
+          Not a member yet?{" "}
+          <a
+            href="/signup"
+            className="text-green-600 dark:text-green-400 underline"
+          >
+            Sign Up
+          </a>
+        </p>
+        <p className="text-center mt-6 text-gray-900 dark:text-gray-300 relative z-20">
+          Are you a member?{" "}
+          <a
+            href="/login"
+            className="text-green-600 dark:text-green-400 underline"
+          >
+            Login here
+          </a>
+        </p>
+      </div>
     </div>
   );
 }

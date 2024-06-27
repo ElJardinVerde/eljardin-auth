@@ -18,14 +18,12 @@ import bcrypt from "bcryptjs";
 import { Snackbar } from "../components/Snackbar";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Button } from "@/components/ui/button";
-import Webcam, { WebcamProps } from 'react-webcam';
-
+import Webcam, { WebcamProps } from "react-webcam";
 
 const Select = dynamic(() => import("react-select"), { ssr: false });
 const MobileDatePicker = dynamic(() => import("react-mobile-datepicker"), {
   ssr: false,
 });
-
 
 const isOver21 = (dob: Date | null) => {
   if (!dob) return false;
@@ -245,7 +243,7 @@ export function SignUp() {
   };
 
   return (
-    <div className="max-w-md w-full mx-auto mt-24 items-center rounded-none md:rounded-2xl p-4 md:p-8 shadow-input bg-white dark:bg-black">
+    <div className="max-w-md w-full mx-auto mt-12 items-center rounded-none md:rounded-2xl p-4 md:p-8 shadow-input bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
       <h3 className="font-bold text-3xl text-center text-neutral-800 dark:text-neutral-200 pb-6">
         Welcome to ElJardinVerde!
       </h3>

@@ -120,8 +120,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
-      <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
+      <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
         {userData ? (
           <div className="space-y-10 min-h-screen mt-10">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 text-center">
