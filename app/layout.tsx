@@ -22,17 +22,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <StrictMode>
-      <html lang="en">
-        <body
-          className={shadCn(
-            "min-h-screen font-sans antialiased",
-            fontSans.variable
-          )}
-        >
-          <ThemeProvider>{children}</ThemeProvider>
-        </body>
-      </html>
-    </StrictMode>
+    <html lang="en">
+      <body
+        className={shadCn(
+          "min-h-screen font-sans antialiased",
+          fontSans.variable
+        )}
+      >
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
+    </html>
   );
 }
