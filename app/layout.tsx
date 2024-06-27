@@ -1,10 +1,8 @@
-// app/layout.tsx
 import type { Metadata } from "next";
 import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
 import { shadCn } from "../lib/utils";
 import { ThemeProvider } from "../app/context/ThemeContext";
-import { StrictMode } from "react";
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -22,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={shadCn(
           "min-h-screen font-sans antialiased",

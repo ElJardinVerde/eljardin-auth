@@ -1,43 +1,41 @@
-"use client";
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+type Theme = 'light' | 'dark';
+
 type ThemeContextType = {
-  theme: 'light' | 'dark' | null;
+  theme: Theme;
   toggleTheme: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null); 
+  const [theme, setTheme] = useState<Theme>('dark');
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
+    const savedTheme = localStorage.getItem('theme') as Theme;
     if (savedTheme) {
       setTheme(savedTheme);
-    } else {
-      setTheme('dark'); 
     }
+    setIsLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (theme) {
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-        document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.setAttribute('data-theme', 'light');
-        localStorage.setItem('theme', 'light');
-      }
+    if (isLoaded) {
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
     }
-  }, [theme]);
+  }, [theme, isLoaded]);
 
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
   };
+
+  if (!isLoaded) {
+    return null; 
+  }
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
