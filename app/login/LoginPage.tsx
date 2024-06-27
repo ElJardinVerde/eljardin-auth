@@ -14,6 +14,8 @@ import { auth, db } from "../api/firebaseConfig";
 import { Snackbar } from "../components/Snackbar";
 import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import MembershipCard from "./MembershipCard";
+import { sendPasswordResetEmail } from "firebase/auth";
+import ForgotPasswordModal from "./ForgotPass";
 
 export default function LoginPage() {
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -30,6 +32,9 @@ export default function LoginPage() {
   } | null>(null);
   const { theme } = useTheme();
   const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] =
+    useState(false);
 
   const fetchUserData = async (uid: string) => {
     try {
@@ -119,6 +124,69 @@ export default function LoginPage() {
     setQrCode(qrCodeUrl);
   };
 
+  const handleForgotPassword = async (email: string) => {
+    console.log("Attempting to send password reset email to:", email);
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      console.log("Password reset email sent successfully.");
+
+      setSnackbar({
+        show: true,
+        message: "Password reset email sent!",
+        type: "success",
+      });
+    } catch (error) {
+      console.error("Error sending password reset email:", error);
+
+      if (error instanceof Error) {
+        console.log("Error type identified:", error.message);
+
+        if (error.message.includes("auth/user-not-found")) {
+          setSnackbar({
+            show: true,
+            message: "No user found with that email.",
+            type: "error",
+          });
+        } else if (error.message.includes("auth/invalid-email")) {
+          setSnackbar({
+            show: true,
+            message: "Invalid email address.",
+            type: "error",
+          });
+        } else {
+          setSnackbar({
+            show: true,
+            message:
+              "Failed to send password reset email. Please try again later.",
+            type: "error",
+          });
+        }
+      } else {
+        setSnackbar({
+          show: true,
+          message: "An unexpected error occurred.",
+          type: "error",
+        });
+      }
+    }
+  };
+
+  const handleSnackbar = (message: string, type: "success" | "error") => {
+    setSnackbar({ show: true, message, type });
+    setTimeout(() => {
+      setSnackbar({ ...snackbar, show: false });
+    }, 3000);
+  };
+
+  const hideSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, show: false }));
+  };
+
+  const showSnackbar = (message: string, type: "success" | "error") => {
+    setSnackbar({ message, type, show: true });
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
       <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
@@ -156,7 +224,7 @@ export default function LoginPage() {
             )}
             <div className="flex justify-center">
               <Button
-              className="w-64"
+                className="w-64"
                 onClick={() => {
                   auth.signOut();
                   router.push("/");
@@ -203,18 +271,25 @@ export default function LoginPage() {
                 ) : null}
               </LabelInputContainer>
 
-              <div className="flex justify-center">
+              <div className="text-center mt-4">
                 <Button type="submit" className="w-full">
                   Login
                 </Button>
               </div>
+              <button
+                type="button"
+                onClick={() => setIsForgotPasswordModalOpen(true)}
+                className="text-sm text-center items-center justify-center text-green-300 dark:text-green-00 hover:underline"
+              >
+                Forgot Password?
+              </button>
             </form>
 
             <p className="text-center text-gray-600 dark:text-gray-400 mt-6">
               Not a member?{" "}
               <a
                 href="/signup"
-                className="text-blue-600 dark:text-blue-400 hover:underline"
+                className="text-green-300 dark:text-green-300 hover:underline"
               >
                 Sign Up here!
               </a>
@@ -225,6 +300,13 @@ export default function LoginPage() {
           message={snackbar.message}
           type={snackbar.type}
           show={snackbar.show}
+          onClose={hideSnackbar}
+        />
+        <ForgotPasswordModal
+          isOpen={isForgotPasswordModalOpen}
+          setIsOpen={setIsForgotPasswordModalOpen}
+          sendPasswordReset={(email) => handleForgotPassword(email)}
+          onSnackbar={handleSnackbar}
         />
       </div>
     </div>

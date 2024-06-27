@@ -506,6 +506,9 @@ export function SignUp() {
         message={snackbar.message}
         type={snackbar.type}
         show={snackbar.show}
+        onClose={function (): void {
+          throw new Error("Function not implemented.");
+        }}
       />
     </div>
   );
