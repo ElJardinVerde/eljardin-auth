@@ -1,18 +1,18 @@
 {
     "version": 2,
     "functions": {
-      "api/**/*.js": {
+      "app/api/**/*.js": {
         "maxDuration": 10
       }
     },
     "routes": [
       {
         "src": "/api/create-payment-intent",
-        "dest": "/api/create-payment-intent.js"
+        "dest": "/app/api/create-payment-intent.js"
       },
       {
         "src": "/api/payment-sheet",
-        "dest": "/api/payment-sheet.js"
+        "dest": "/app/api/payment-sheet.js"
       }
     ]
   }
