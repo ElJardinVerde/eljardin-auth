@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     console.log("Creating ephemeral key");
     const ephemeralKey = await stripe.ephemeralKeys.create(
       { customer: customer.id },
-      { apiVersion: "2024-03-14" }
+      { apiVersion: "2024-06-20" }
     );
     console.log("Ephemeral key created");
 
