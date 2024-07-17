@@ -8,11 +8,11 @@
     "routes": [
       {
         "src": "/api/create-payment-intent",
-        "dest": "/app/api/create-payment-intent.js"
+        "dest": "/app/api/route.ts"
       },
       {
         "src": "/api/payment-sheet",
-        "dest": "/app/api/payment-sheet.js"
+        "dest": "/app/api/route.ts"
       },
       {
         "src": "/api/route.ts",
