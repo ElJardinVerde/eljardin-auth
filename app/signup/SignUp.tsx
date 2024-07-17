@@ -90,7 +90,7 @@ export function SignUp() {
     async function fetchClientSecret() {
       try {
         const response = await fetch(
-          "https://auth.eljardinverde.org/create-payment-intent",
+          "https://auth.eljardinverde.org/api/create-payment-intent", 
           {
             method: "POST",
             headers: {
@@ -110,9 +110,10 @@ export function SignUp() {
         console.error("Error fetching client secret", error);
       }
     }
-
+  
     fetchClientSecret();
   }, []);
+  
 
   const MembershipPaymentModal = () => {
     const [selectedMembership, setSelectedMembership] = useState<string | null>(
@@ -123,7 +124,7 @@ export function SignUp() {
       setMembership(type);
       try {
         const response = await fetch(
-          "https://auth.eljardinverde.org/create-payment-intent",
+          "https://auth.eljardinverde.org/api/create-payment-intent",
           {
             method: "POST",
             headers: {
@@ -180,7 +181,7 @@ export function SignUp() {
           const result = await stripe.confirmPayment({
             elements,
             confirmParams: {
-              return_url: "http://localhost:3000/signup",
+              return_url: "https://auth.eljardinverde.org/signup",
             },
             redirect: "if_required",
           });
