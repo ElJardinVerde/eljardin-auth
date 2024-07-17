@@ -135,7 +135,7 @@ export function SignUp() {
       setMembership(type);
       try {
         const response = await fetch(
-          "https://auth.eljardinverde.org/api/sheet",
+          "/api/payment",
           {
             method: "POST",
             headers: {
