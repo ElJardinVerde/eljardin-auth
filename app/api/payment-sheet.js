@@ -1,8 +1,6 @@
-import Stripe from 'stripe';
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -32,4 +30,4 @@ export default async function handler(req, res) {
     console.error("Error creating payment sheet:", error);
     res.status(500).json({ error: error.message });
   }
-}
+};
