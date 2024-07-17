@@ -306,7 +306,7 @@ export function Authentification() {
             </motion.div>
           )}
         </AnimatePresence>
-        <p className="text-center mt-6 text-gray-900 dark:text-gray-300 relative z-20">
+        <p className="text-center mt-8 text-gray-900 dark:text-gray-300 relative z-20">
           Not a member yet?{" "}
           <a
             href="/signup"
@@ -315,7 +315,7 @@ export function Authentification() {
             Sign Up
           </a>
         </p>
-        <p className="text-center mt-6 text-gray-900 dark:text-gray-300 relative z-20">
+        <p className="text-center mt-8 text-gray-900 dark:text-gray-300 relative z-20">
           Are you a member?{" "}
           <a
             href="/login"
