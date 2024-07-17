@@ -19,7 +19,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Button } from "@/components/ui/button";
 import Webcam, { WebcamProps } from "react-webcam";
 import { loadStripe } from "@stripe/stripe-js";
-import { Stripe, StripeError } from "@stripe/stripe-js";
+//import { Stripe, StripeError } from "@stripe/stripe-js";
 import {
   useStripe,
   useElements,
