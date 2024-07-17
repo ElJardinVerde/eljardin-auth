@@ -3,6 +3,8 @@ import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
 import { shadCn } from "../lib/utils";
 import { ThemeProvider } from "../app/context/ThemeContext";
+import { Elements } from "@stripe/react-stripe-js";
+
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -27,7 +29,7 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

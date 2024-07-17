@@ -87,7 +87,7 @@ export default function LoginPage() {
         });
         setTimeout(
           () => setSnackbar({ show: false, message: "", type: "success" }),
-          3000
+          4000
         );
       } catch (error) {
         console.error("Error during login:", error);
@@ -98,7 +98,7 @@ export default function LoginPage() {
         });
         setTimeout(
           () => setSnackbar({ show: false, message: "", type: "error" }),
-          3000
+          4000
         );
       }
     },

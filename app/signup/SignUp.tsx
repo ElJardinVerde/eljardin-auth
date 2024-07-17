@@ -1,7 +1,6 @@
-// SignUp.tsx
 "use client";
 import dynamic from "next/dynamic";
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -19,6 +18,19 @@ import { Snackbar } from "../components/Snackbar";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Button } from "@/components/ui/button";
 import Webcam, { WebcamProps } from "react-webcam";
+import { loadStripe } from "@stripe/stripe-js";
+import { Stripe, StripeError } from "@stripe/stripe-js";
+import {
+  useStripe,
+  useElements,
+  PaymentElement,
+  Elements,
+  CardElement,
+} from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(
+  "pk_test_51Ob2fwJPY3RNRZWOPMWKBlqBBlmXxAOOmPK8Oc1q8RYGckaOADrxaHPIARD1NGV3h8PaCrnCsQxLwPCWn7hQdYne00MdCsfgG5"
+);
 
 const Select = dynamic(() => import("react-select"), { ssr: false });
 const MobileDatePicker = dynamic(() => import("react-mobile-datepicker"), {
@@ -37,10 +49,17 @@ const isOver21 = (dob: Date | null) => {
   );
 };
 
+interface HandlePaymentSubmissionProps {
+  clientSecret: string;
+}
+
 export function SignUp() {
   const { theme } = useTheme();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const stripe = useStripe();
+  const elements = useElements();
+  const [clientSecret, setClientSecret] = useState("");
 
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
@@ -57,6 +76,226 @@ export function SignUp() {
   const [photoStatus, setPhotoStatus] = useState<string>("");
 
   const options = countryList().getData();
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
+  const [membership, setMembership] = useState("");
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [stripeElementsOptions, setStripeElementsOptions] = useState({
+    clientSecret: "",
+  });
+  const [paymentStatus, setPaymentStatus] = useState<
+    "pending" | "success" | "failed"
+  >("pending");
+
+  useEffect(() => {
+    async function fetchClientSecret() {
+      try {
+        const response = await fetch(
+          "http://localhost:3001/create-payment-intent",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ amount: 2500 }),
+          }
+        );
+        const data = await response.json();
+        if (data.clientSecret) {
+          setClientSecret(data.clientSecret);
+          setStripeElementsOptions({ clientSecret: data.clientSecret });
+        } else {
+          console.error("Failed to fetch client secret", data);
+        }
+      } catch (error) {
+        console.error("Error fetching client secret", error);
+      }
+    }
+
+    fetchClientSecret();
+  }, []);
+
+  const MembershipPaymentModal = () => {
+    const [selectedMembership, setSelectedMembership] = useState<string | null>(
+      null
+    );
+
+    const handleMembershipSelection = async (amount: number, type: string) => {
+      setMembership(type);
+      try {
+        const response = await fetch(
+          "http://localhost:3000/create-payment-intent",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ amount }),
+          }
+        );
+        const data = await response.json();
+        if (data.clientSecret) {
+          setClientSecret(data.clientSecret);
+          setStripeElementsOptions({ clientSecret: data.clientSecret });
+          setSelectedMembership(type);
+        } else {
+          console.error("Failed to fetch client secret", data);
+        }
+      } catch (error) {
+        console.error("Error fetching client secret", error);
+      }
+    };
+
+    const StripePaymentForm = () => {
+      const stripe = useStripe();
+      const elements = useElements();
+
+      const handlePaymentSubmission = async (
+        event: React.FormEvent<HTMLFormElement>
+      ) => {
+        event.preventDefault();
+
+        if (!stripe || !elements) {
+          console.error("Stripe.js has not loaded yet.");
+          setSnackbar({
+            show: true,
+            message: "Stripe.js is not loaded. Please try again.",
+            type: "error",
+          });
+          return;
+        }
+
+        const paymentElement = elements.getElement(PaymentElement);
+
+        if (!paymentElement) {
+          console.error("Payment Element has not been properly initialized.");
+          setSnackbar({
+            show: true,
+            message: "Payment form is not ready. Please try again.",
+            type: "error",
+          });
+          return;
+        }
+
+        try {
+          const result = await stripe.confirmPayment({
+            elements,
+            confirmParams: {
+              return_url: "http://localhost:3000/signup",
+            },
+            redirect: "if_required",
+          });
+
+          if (result.error) {
+            console.log(result.error.message);
+            setSnackbar({
+              show: true,
+              message:
+                result.error.message || "An error occurred during payment.",
+              type: "error",
+            });
+            setPaymentStatus("failed");
+          } else if (
+            result.paymentIntent &&
+            result.paymentIntent.status === "succeeded"
+          ) {
+            console.log("Payment succeeded!");
+            setPaymentSuccess(true);
+            setPaymentStatus("success");
+            setSnackbar({
+              show: true,
+              message:
+                "Payment successful! Now you can submit your membership!",
+              type: "success",
+            });
+            setIsPaymentModalOpen(false);
+          } else {
+            console.error("Unexpected payment result:", result);
+            setSnackbar({
+              show: true,
+              message: "Unexpected payment result. Please try again.",
+              type: "error",
+            });
+            setPaymentStatus("failed");
+          }
+        } catch (error) {
+          console.error("Payment failed", error);
+          setSnackbar({
+            show: true,
+            message: "Payment failed. Please try again.",
+            type: "error",
+          });
+          setPaymentStatus("failed");
+        }
+      };
+
+      return (
+        <form
+          onSubmit={handlePaymentSubmission}
+          className="bg-white p-8 rounded-lg shadow-lg"
+        >
+          <h3 className="text-lg font-medium text-gray-800 mb-4">
+            Complete your payment for {selectedMembership}
+          </h3>
+          <PaymentElement />
+          <button
+            type="submit"
+            className="w-full mt-4"
+            disabled={!stripe || !elements}
+          >
+            Submit Payment
+          </button>
+          <button
+            onClick={() => {
+              setIsPaymentModalOpen(false);
+              setSelectedMembership(null);
+              setClientSecret("");
+            }}
+            className="w-full mt-4"
+          >
+            Cancel
+          </button>
+        </form>
+      );
+    };
+
+    return (
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${
+          isPaymentModalOpen ? "" : "hidden"
+        }`}
+      >
+        {!selectedMembership ? (
+          <div className="bg-white p-8 rounded-lg shadow-lg">
+            <h3 className="text-lg font-medium text-gray-800 mb-4">
+              Select Membership
+            </h3>
+            <button
+              onClick={() => handleMembershipSelection(2500, "Regular member")}
+              className="w-full mt-4"
+            >
+              Regular member - 25 EUR
+            </button>
+            <button
+              onClick={() => handleMembershipSelection(5000, "VIP member")}
+              className="w-full mt-4"
+            >
+              VIP member - 50 EUR
+            </button>
+            <button
+              onClick={() => setIsPaymentModalOpen(false)}
+              className="w-full mt-4"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <Elements stripe={stripePromise} options={stripeElementsOptions}>
+            <StripePaymentForm />
+          </Elements>
+        )}
+      </div>
+    );
+  };
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -124,6 +363,14 @@ export function SignUp() {
         setSnackbar({
           show: true,
           message: "You must be over 21 years old to register.",
+          type: "error",
+        });
+        return;
+      }
+      if (!paymentSuccess) {
+        setSnackbar({
+          show: true,
+          message: "Complete payment to register.",
           type: "error",
         });
         return;
@@ -242,274 +489,359 @@ export function SignUp() {
     }),
   };
 
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, show: false });
+  };
+
+  const handlePaymentSubmission = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    if (!stripe || !elements) {
+      console.error("Stripe.js has not loaded yet.");
+      setSnackbar({
+        show: true,
+        message: "Stripe.js is not loaded. Please try again.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      const result = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          // Optionally you can add redirect URL or other parameters here
+        },
+        redirect: "if_required", // this prevents redirecting on success
+      });
+
+      if (result.error) {
+        console.log(result.error.message);
+        setSnackbar({
+          show: true,
+          message: result.error.message || "An error occurred during payment.",
+          type: "error",
+        });
+      } else if (result.paymentIntent?.status === "succeeded") {
+        console.log("Payment succeeded!");
+        setPaymentSuccess(true);
+        setSnackbar({
+          show: true,
+          message: "Payment successful!",
+          type: "success",
+        });
+      } else {
+        console.error("Unexpected payment result:", result);
+        setSnackbar({
+          show: true,
+          message: "Unexpected payment result. Please try again.",
+          type: "error",
+        });
+      }
+    } catch (error) {
+      console.error("Payment failed", error);
+      setSnackbar({
+        show: true,
+        message: "Payment failed. Please try again.",
+        type: "error",
+      });
+    }
+  };
+
   return (
-    <div className="max-w-md w-full mx-auto mt-12 items-center rounded-none md:rounded-2xl p-4 md:p-8 shadow-input bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
-      <h3 className="font-bold text-3xl text-center text-neutral-800 dark:text-neutral-200 pb-6">
-        Welcome to ElJardinVerde!
-      </h3>
-      <p className="text-neutral-600 text-sm max-w-sm mt-2 dark:text-neutral-300">
-        Please fill in the form below for official registration to our club!
-      </p>
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
+      <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
+        <h3 className="font-bold text-3xl text-center text-neutral-800 dark:text-neutral-200 pb-6">
+          Welcome to ElJardinVerde!
+        </h3>
+        <p className="text-neutral-600 text-sm max-w-sm mt-2 dark:text-neutral-300">
+          Please fill in the form below for official registration to our club!
+        </p>
 
-      <form className="my-8" onSubmit={formik.handleSubmit}>
-        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
-          <LabelInputContainer>
-            <Label htmlFor="firstname">First name</Label>
-            <Input
-              id="firstname"
-              placeholder="ex: Tyler"
-              type="text"
-              {...formik.getFieldProps("firstname")}
-            />
-            {formik.touched.firstname && formik.errors.firstname ? (
-              <div className="text-red-600">{formik.errors.firstname}</div>
-            ) : null}
-          </LabelInputContainer>
-          <LabelInputContainer>
-            <Label htmlFor="lastname">Last name</Label>
-            <Input
-              id="lastname"
-              placeholder="ex: Durden"
-              type="text"
-              {...formik.getFieldProps("lastname")}
-            />
-            {formik.touched.lastname && formik.errors.lastname ? (
-              <div className="text-red-600">{formik.errors.lastname}</div>
-            ) : null}
-          </LabelInputContainer>
-        </div>
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="dob">Date of Birth</Label>
-          <Input
-            id="dob"
-            placeholder="Click to select your date of birth"
-            value={dateOfBirth ? dateOfBirth.toLocaleDateString() : ""}
-            onClick={() => setIsDatePickerOpen(true)}
-            readOnly
-            className="cursor-pointer"
-          />
-          <MobileDatePicker
-            isOpen={isDatePickerOpen}
-            onSelect={handleDateSelect}
-            onCancel={() => setIsDatePickerOpen(false)}
-            max={new Date()}
-            theme="ios"
-            confirmText="OK"
-            cancelText="Cancel"
-            headerFormat="YYYY-MM-DD"
-            dateFormat={["YYYY", "MM", "DD"]}
-          />
-          {formik.touched.dob && formik.errors.dob ? (
-            <div className="text-red-600">{formik.errors.dob}</div>
-          ) : null}
-        </LabelInputContainer>
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="placeOfBirth">Place of Birth</Label>
-          <Input
-            id="placeOfBirth"
-            placeholder="ex London"
-            type="text"
-            {...formik.getFieldProps("placeOfBirth")}
-          />
-          {formik.touched.placeOfBirth && formik.errors.placeOfBirth ? (
-            <div className="text-red-600">{formik.errors.placeOfBirth}</div>
-          ) : null}
-        </LabelInputContainer>
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="countryOfResidence">Country of Residence</Label>
-          <Select
-            options={options}
-            value={country}
-            onChange={(selectedOption) => {
-              setCountry(selectedOption);
-              formik.setFieldValue("countryOfResidence", selectedOption);
-            }}
-            styles={customStyles}
-            className="w-full"
-            classNamePrefix="select"
-          />
-          {formik.touched.countryOfResidence &&
-          formik.errors.countryOfResidence ? (
-            <div className="text-red-600">
-              {formik.errors.countryOfResidence}
-            </div>
-          ) : null}
-        </LabelInputContainer>
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="formOfIdentification">Form of Identification</Label>
-          <div className="relative p-[2px] rounded-lg group/input">
-            <select
-              id="formOfIdentification"
-              className="w-full h-10 px-3 py-2 border-none rounded-md bg-gray-50 dark:bg-zinc-800 text-black dark:text-white shadow-input focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600"
-              {...formik.getFieldProps("formOfIdentification")}
-            >
-              <option value="">Select an option</option>
-              <option value="ID">ID</option>
-              <option value="Passport">Passport</option>
-              <option value="Driver Licence">Driver Licence</option>
-            </select>
+        {MembershipPaymentModal()}
+
+        <form className="my-8" onSubmit={formik.handleSubmit}>
+          <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
+            <LabelInputContainer>
+              <Label htmlFor="firstname">First name</Label>
+              <Input
+                id="firstname"
+                placeholder="ex: Tyler"
+                type="text"
+                {...formik.getFieldProps("firstname")}
+              />
+              {formik.touched.firstname && formik.errors.firstname ? (
+                <div className="text-red-600">{formik.errors.firstname}</div>
+              ) : null}
+            </LabelInputContainer>
+            <LabelInputContainer>
+              <Label htmlFor="lastname">Last name</Label>
+              <Input
+                id="lastname"
+                placeholder="ex: Durden"
+                type="text"
+                {...formik.getFieldProps("lastname")}
+              />
+              {formik.touched.lastname && formik.errors.lastname ? (
+                <div className="text-red-600">{formik.errors.lastname}</div>
+              ) : null}
+            </LabelInputContainer>
           </div>
-          {formik.touched.formOfIdentification &&
-          formik.errors.formOfIdentification ? (
-            <div className="text-red-600">
-              {formik.errors.formOfIdentification}
-            </div>
-          ) : null}
-        </LabelInputContainer>
-
-        <div>
           <LabelInputContainer className="mb-4">
-            <Label htmlFor="uploadPhoto">Upload a Photo of You with ID</Label>
+            <Label htmlFor="dob">Date of Birth</Label>
+            <Input
+              id="dob"
+              placeholder="Click to select your date of birth"
+              value={dateOfBirth ? dateOfBirth.toLocaleDateString() : ""}
+              onClick={() => setIsDatePickerOpen(true)}
+              readOnly
+              className="cursor-pointer"
+            />
+            <MobileDatePicker
+              isOpen={isDatePickerOpen}
+              onSelect={handleDateSelect}
+              onCancel={() => setIsDatePickerOpen(false)}
+              max={new Date()}
+              theme="ios"
+              confirmText="OK"
+              cancelText="Cancel"
+              headerFormat="YYYY-MM-DD"
+              dateFormat={["YYYY", "MM", "DD"]}
+            />
+            {formik.touched.dob && formik.errors.dob ? (
+              <div className="text-red-600">{formik.errors.dob}</div>
+            ) : null}
+          </LabelInputContainer>
+          <LabelInputContainer className="mb-4">
+            <Label htmlFor="placeOfBirth">Place of Birth</Label>
+            <Input
+              id="placeOfBirth"
+              placeholder="ex London"
+              type="text"
+              {...formik.getFieldProps("placeOfBirth")}
+            />
+            {formik.touched.placeOfBirth && formik.errors.placeOfBirth ? (
+              <div className="text-red-600">{formik.errors.placeOfBirth}</div>
+            ) : null}
+          </LabelInputContainer>
+          <LabelInputContainer className="mb-4">
+            <Label htmlFor="countryOfResidence">Country of Residence</Label>
+            <Select
+              options={options}
+              value={country}
+              onChange={(selectedOption) => {
+                setCountry(selectedOption);
+                formik.setFieldValue("countryOfResidence", selectedOption);
+              }}
+              styles={customStyles}
+              className="w-full"
+              classNamePrefix="select"
+            />
+            {formik.touched.countryOfResidence &&
+            formik.errors.countryOfResidence ? (
+              <div className="text-red-600">
+                {formik.errors.countryOfResidence}
+              </div>
+            ) : null}
+          </LabelInputContainer>
+          <LabelInputContainer className="mb-4">
+            <Label htmlFor="formOfIdentification">Form of Identification</Label>
             <div className="relative p-[2px] rounded-lg group/input">
-              <Button onClick={handleOpenModal} type="button">
-                {photoStatus || "Take a photo or upload a file"}
-              </Button>
+              <select
+                id="formOfIdentification"
+                className="w-full h-10 px-3 py-2 border-none rounded-md bg-gray-50 dark:bg-zinc-800 text-black dark:text-white shadow-input focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600"
+                {...formik.getFieldProps("formOfIdentification")}
+              >
+                <option value="">Select an option</option>
+                <option value="ID">ID</option>
+                <option value="Passport">Passport</option>
+                <option value="Driver Licence">Driver Licence</option>
+              </select>
             </div>
-            {formik.touched.uploadPhoto && formik.errors.uploadPhoto ? (
-              <div className="text-red-600">{formik.errors.uploadPhoto}</div>
+            {formik.touched.formOfIdentification &&
+            formik.errors.formOfIdentification ? (
+              <div className="text-red-600">
+                {formik.errors.formOfIdentification}
+              </div>
             ) : null}
           </LabelInputContainer>
 
-          {isModalOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white p-8 rounded-lg shadow-lg">
-                <h3 className="text-lg font-medium text-gray-800 mb-4">
-                  Choose an option
-                </h3>
-                <Button
-                  onClick={() => {
-                    setIsCameraOpen(true);
-                    handleCloseModal();
-                  }}
-                  className="w-full mb-4"
-                >
-                  Capture Photo
-                </Button>
-                <Button
-                  onClick={() => {
-                    fileInputRef.current?.click();
-                    handleCloseModal();
-                  }}
-                  className="w-full"
-                >
-                  Upload from Device
-                </Button>
-                <Button onClick={handleCloseModal} className="w-full mt-4">
-                  Cancel
+          <div>
+            <LabelInputContainer className="mb-4">
+              <Label htmlFor="uploadPhoto">Upload a Photo of You with ID</Label>
+              <div className="relative p-[2px] rounded-lg group/input">
+                <Button onClick={handleOpenModal} type="button">
+                  {photoStatus || "Take a photo or upload a file"}
                 </Button>
               </div>
-            </div>
-          )}
+              {formik.touched.uploadPhoto && formik.errors.uploadPhoto ? (
+                <div className="text-red-600">{formik.errors.uploadPhoto}</div>
+              ) : null}
+            </LabelInputContainer>
 
-          <Input
-            id="uploadPhoto"
-            type="file"
-            accept="image/*"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-          />
-
-          {isCameraOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white p-8 rounded-lg shadow-lg">
-                <Webcam
-                  audio={false}
-                  ref={webcamRef}
-                  screenshotFormat="image/jpeg"
-                  videoConstraints={{ facingMode: "user" }}
-                />
-                <Button onClick={handleCapturePhoto} className="mt-4 w-full">
-                  Capture Photo
-                </Button>
-                <Button
-                  onClick={() => setIsCameraOpen(false)}
-                  className="mt-4 w-full"
-                >
-                  Close Camera
-                </Button>
+            {isModalOpen && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-8 rounded-lg shadow-lg">
+                  <h3 className="text-lg font-medium text-gray-800 mb-4">
+                    Choose an option
+                  </h3>
+                  <Button
+                    onClick={() => {
+                      setIsCameraOpen(true);
+                      handleCloseModal();
+                    }}
+                    className="w-full mb-4"
+                  >
+                    Capture Photo
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                      handleCloseModal();
+                    }}
+                    className="w-full"
+                  >
+                    Upload from Device
+                  </Button>
+                  <Button onClick={handleCloseModal} className="w-full mt-4">
+                    Cancel
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="email">Email Address</Label>
-          <Input
-            id="email"
-            placeholder="Your email address"
-            type="email"
-            {...formik.getFieldProps("email")}
-          />
-          {formik.touched.email && formik.errors.email ? (
-            <div className="text-red-600">{formik.errors.email}</div>
-          ) : null}
-        </LabelInputContainer>
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            placeholder="••••••••"
-            type="password"
-            {...formik.getFieldProps("password")}
-          />
-          {formik.touched.password && formik.errors.password ? (
-            <div className="text-red-600">{formik.errors.password}</div>
-          ) : null}
-        </LabelInputContainer>
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="retypePassword">Retype Password</Label>
-          <Input
-            id="retypePassword"
-            placeholder="••••••••"
-            type="password"
-            {...formik.getFieldProps("retypePassword")}
-          />
-          {formik.touched.retypePassword && formik.errors.retypePassword ? (
-            <div className="text-red-600">{formik.errors.retypePassword}</div>
-          ) : null}
-        </LabelInputContainer>
+            <Input
+              id="uploadPhoto"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+            />
 
-        <button
-          className="bg-gradient-to-br relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset]"
-          type="submit"
-        >
-          Sign up &rarr;
-          <BottomGradient />
-        </button>
+            {isCameraOpen && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-8 rounded-lg shadow-lg">
+                  <Webcam
+                    audio={false}
+                    ref={webcamRef}
+                    screenshotFormat="image/jpeg"
+                    videoConstraints={{ facingMode: "user" }}
+                  />
+                  <Button onClick={handleCapturePhoto} className="mt-4 w-full">
+                    Capture Photo
+                  </Button>
+                  <Button
+                    onClick={() => setIsCameraOpen(false)}
+                    className="mt-4 w-full"
+                  >
+                    Close Camera
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
 
-        <button
-          className="mt-8 bg-gradient-to-br relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset]"
-          type="button"
-          onClick={handleBackClick}
-        >
-          Back &larr;
-          <BottomGradient />
-        </button>
+          <LabelInputContainer className="mb-4">
+            <Label htmlFor="email">Email Address</Label>
+            <Input
+              id="email"
+              placeholder="Your email address"
+              type="email"
+              {...formik.getFieldProps("email")}
+            />
+            {formik.touched.email && formik.errors.email ? (
+              <div className="text-red-600">{formik.errors.email}</div>
+            ) : null}
+          </LabelInputContainer>
+          <LabelInputContainer className="mb-4">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              placeholder="••••••••"
+              type="password"
+              {...formik.getFieldProps("password")}
+            />
+            {formik.touched.password && formik.errors.password ? (
+              <div className="text-red-600">{formik.errors.password}</div>
+            ) : null}
+          </LabelInputContainer>
+          <LabelInputContainer className="mb-4">
+            <Label htmlFor="retypePassword">Retype Password</Label>
+            <Input
+              id="retypePassword"
+              placeholder="••••••••"
+              type="password"
+              {...formik.getFieldProps("retypePassword")}
+            />
+            {formik.touched.retypePassword && formik.errors.retypePassword ? (
+              <div className="text-red-600">{formik.errors.retypePassword}</div>
+            ) : null}
+          </LabelInputContainer>
+          <LabelInputContainer className="mb-4">
+            <Button onClick={() => setIsPaymentModalOpen(true)} type="button">
+              Select Membership and Pay
+            </Button>
+            {membership && (
+              <div
+                className={`${
+                  paymentStatus === "success"
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+              >
+                Membership Selected: {membership}
+                {paymentStatus === "success" && " - Payment Successful"}
+                {paymentStatus === "failed" &&
+                  " - Payment Failed. Please try again."}
+              </div>
+            )}
+          </LabelInputContainer>
 
-        <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-8 h-[1px] w-full" />
+          <button
+            className={`bg-gradient-to-br relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset] ${
+              paymentStatus !== "success" ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            type="submit"
+            disabled={paymentStatus !== "success"}
+          >
+            Sign up &rarr;
+            <BottomGradient />
+          </button>
 
-        <div className="text-center mt-4">
-          <p className="text-neutral-600 dark:text-neutral-300">
-            Already a user?{" "}
-            <a
-              href="/login"
-              className="text-blue-600 dark:text-blue-400 underline"
-            >
-              Click here to login!
-            </a>
-          </p>
-        </div>
-      </form>
+          <button
+            className="mt-8 bg-gradient-to-br relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset]"
+            type="button"
+            onClick={handleBackClick}
+          >
+            Back &larr;
+            <BottomGradient />
+          </button>
 
-      <Snackbar
-        message={snackbar.message}
-        type={snackbar.type}
-        show={snackbar.show}
-        onClose={function (): void {
-          throw new Error("Function not implemented.");
-        }}
-      />
+          <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-8 h-[1px] w-full" />
+
+          <div className="text-center mt-4">
+            <p className="text-neutral-600 dark:text-neutral-300">
+              Already a user?{" "}
+              <a
+                href="/login"
+                className="text-blue-600 dark:text-blue-400 underline"
+              >
+                Click here to login!
+              </a>
+            </p>
+          </div>
+        </form>
+
+        <Snackbar
+          message={snackbar.message}
+          type={snackbar.type}
+          show={snackbar.show}
+          onClose={handleCloseSnackbar}
+        />
+      </div>
     </div>
   );
 }

@@ -16,7 +16,6 @@ import {
   updateDoc,
   doc,
 } from "firebase/firestore";
-import { DotBackgroundDemo } from "./ui/background";
 
 type QrScannerProps = {
   delay?: number;
