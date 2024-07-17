@@ -90,7 +90,7 @@ export function SignUp() {
     async function fetchClientSecret() {
       try {
         const response = await fetch(
-          "http://auth.eljardinverde.org/create-payment-intent",
+          "https://auth.eljardinverde.org/create-payment-intent",
           {
             method: "POST",
             headers: {
@@ -123,7 +123,7 @@ export function SignUp() {
       setMembership(type);
       try {
         const response = await fetch(
-          "http://auth.eljardinverde.org/create-payment-intent",
+          "https://auth.eljardinverde.org/create-payment-intent",
           {
             method: "POST",
             headers: {
