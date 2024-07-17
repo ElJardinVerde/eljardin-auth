@@ -26,7 +26,7 @@
     "express": "^4.19.2",
     "firebase": "^10.12.2",
     "formik": "^2.4.6",
-    "framer-motion": "^11.2.12",
+    "framer-motion": "^11.3.6",
     "lucide-react": "^0.397.0",
     "mini-svg-data-uri": "^1.4.4",
     "next": "14.2.4",

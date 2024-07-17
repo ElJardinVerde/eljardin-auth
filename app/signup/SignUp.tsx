@@ -27,6 +27,7 @@ import {
   Elements,
   CardElement,
 } from "@stripe/react-stripe-js";
+import { motion, AnimatePresence } from 'framer-motion';
 
 
 
@@ -243,15 +244,18 @@ export function SignUp() {
       return (
         <form
           onSubmit={handlePaymentSubmission}
-          className="bg-white p-8 rounded-lg shadow-lg"
+          className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md max-w-xl w-full mx-auto"
         >
-          <h3 className="text-lg font-medium text-gray-800 mb-4">
-            Complete your payment for {selectedMembership}
+          <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">
+            Complete your payment for{' '}
+            <span className="text-blue-600 dark:text-blue-400">{selectedMembership}</span>
           </h3>
-          <PaymentElement />
+          <div className="mb-6">
+            <PaymentElement className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg" />
+          </div>
           <button
             type="submit"
-            className="w-full mt-4"
+            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={!stripe || !elements}
           >
             Submit Payment
@@ -262,7 +266,7 @@ export function SignUp() {
               setSelectedMembership(null);
               setClientSecret("");
             }}
-            className="w-full mt-4"
+            className="w-full py-3 px-4 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out"
           >
             Cancel
           </button>
@@ -271,41 +275,57 @@ export function SignUp() {
     };
 
     return (
-      <div
-        className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${
-          isPaymentModalOpen ? "" : "hidden"
-        }`}
-      >
-        {!selectedMembership ? (
-          <div className="bg-white p-8 rounded-lg shadow-lg">
-            <h3 className="text-lg font-medium text-gray-800 mb-4">
-              Select Membership
-            </h3>
-            <button
-              onClick={() => handleMembershipSelection(2500, "Regular member")}
-              className="w-full mt-4"
+      <AnimatePresence>
+        {isPaymentModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl max-w-md w-full mx-4"
             >
-              Regular member - 25 EUR
-            </button>
-            <button
-              onClick={() => handleMembershipSelection(5000, "VIP member")}
-              className="w-full mt-4"
-            >
-              VIP member - 50 EUR
-            </button>
-            <button
-              onClick={() => setIsPaymentModalOpen(false)}
-              className="w-full mt-4"
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <Elements stripe={stripePromise} options={stripeElementsOptions}>
-            <StripePaymentForm />
-          </Elements>
+              {!selectedMembership ? (
+                <div className="space-y-6">
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-white text-center">
+                    Select Membership
+                  </h3>
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => handleMembershipSelection(2500, "Regular member")}
+                      className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out flex items-center justify-between"
+                    >
+                      <span>Regular member</span>
+                      <span className="bg-blue-500 py-1 px-2 rounded-md text-sm">25 EUR</span>
+                    </button>
+                    <button
+                      onClick={() => handleMembershipSelection(5000, "VIP member")}
+                      className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out flex items-center justify-between"
+                    >
+                      <span>VIP member</span>
+                      <span className="bg-purple-500 py-1 px-2 rounded-md text-sm">50 EUR</span>
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setIsPaymentModalOpen(false)}
+                    className="w-full py-3 px-4 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <Elements stripe={stripePromise} options={stripeElementsOptions}>
+                  <StripePaymentForm />
+                </Elements>
+              )}
+            </motion.div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     );
   };
 
