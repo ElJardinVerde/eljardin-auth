@@ -28,6 +28,8 @@ import {
   CardElement,
 } from "@stripe/react-stripe-js";
 
+
+
 const stripePromise = loadStripe(
   "pk_test_51Ob2fwJPY3RNRZWOPMWKBlqBBlmXxAOOmPK8Oc1q8RYGckaOADrxaHPIARD1NGV3h8PaCrnCsQxLwPCWn7hQdYne00MdCsfgG5"
 );
@@ -87,36 +89,41 @@ export function SignUp() {
   >("pending");
 
   useEffect(() => {
-    async function fetchClientSecret() {
+    async function fetchPaymentSheet() {
       try {
-        const response = await fetch(
-          "/api/payment", 
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ amount: 2500 }),
-          }
-        );
+        const response = await fetch("/api/sheet", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ amount: 5000 }), 
+        });
   
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
   
         const data = await response.json();
-        if (data.clientSecret) {
-          setClientSecret(data.clientSecret);
-          setStripeElementsOptions({ clientSecret: data.clientSecret });
+        
+        if (data.paymentIntent && data.ephemeralKey && data.customer) {
+          setClientSecret(data.paymentIntent);
+          setStripeElementsOptions({
+            clientSecret: data.paymentIntent,
+          });
         } else {
-          console.error("Failed to fetch client secret", data);
+          throw new Error("Incomplete data received from the server");
         }
       } catch (error) {
-        console.error("Error fetching client secret", error);
+        console.error("Error fetching payment sheet:", error);
+        setSnackbar({
+          show: true,
+          message: "Failed to initialize payment. Please try again.",
+          type: "error"
+        });
       }
     }
   
-    fetchClientSecret();
+    fetchPaymentSheet();
   }, []);
 
   const MembershipPaymentModal = () => {
