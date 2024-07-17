@@ -90,7 +90,7 @@ export function SignUp() {
     async function fetchClientSecret() {
       try {
         const response = await fetch(
-          "https://auth.eljardinverde.org/api/payment/", 
+          "/api/payment", 
           {
             method: "POST",
             headers: {
@@ -99,6 +99,11 @@ export function SignUp() {
             body: JSON.stringify({ amount: 2500 }),
           }
         );
+  
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+  
         const data = await response.json();
         if (data.clientSecret) {
           setClientSecret(data.clientSecret);
@@ -113,7 +118,6 @@ export function SignUp() {
   
     fetchClientSecret();
   }, []);
-  
 
   const MembershipPaymentModal = () => {
     const [selectedMembership, setSelectedMembership] = useState<string | null>(
@@ -124,7 +128,7 @@ export function SignUp() {
       setMembership(type);
       try {
         const response = await fetch(
-          "https://auth.eljardinverde.org/api/create-payment-intent",
+          "https://auth.eljardinverde.org/api/sheet",
           {
             method: "POST",
             headers: {
