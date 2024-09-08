@@ -17,6 +17,12 @@ import MembershipCard from "./MembershipCard";
 import { sendPasswordResetEmail } from "firebase/auth";
 import ForgotPasswordModal from "./ForgotPass";
 import UserInfoCard from "../login/UserData";
+import UpgradeModal from "./UpgradeModal";
+import { loadStripe } from "@stripe/stripe-js";
+
+const stripePromise = loadStripe(
+  "pk_test_51Ob2fwJPY3RNRZWOPMWKBlqBBlmXxAOOmPK8Oc1q8RYGckaOADrxaHPIARD1NGV3h8PaCrnCsQxLwPCWn7hQdYne00MdCsfgG5"
+);
 
 export default function LoginPage() {
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -45,6 +51,13 @@ export default function LoginPage() {
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] =
     useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+
+  const handleUpgrade = () => {
+    console.log("Opening upgrade modal...");
+    setIsUpgradeModalOpen(true);
+  };
 
   const fetchUserData = async (uid: string, email: string) => {
     try {
@@ -80,9 +93,9 @@ export default function LoginPage() {
       });
       console.log("User data set successfully");
 
-      const allowedAdminEmails = ["eljardinverde.office@gmail.com", "iulianpampu@icloud.com"];
+      const allowedAdminEmails = ["iulianpampu@icloud.com"];
       setIsAdmin(allowedAdminEmails.includes(email));
-      } catch (error) {
+    } catch (error) {
       console.error("Error fetching user data:", error);
     }
   };
@@ -117,7 +130,7 @@ export default function LoginPage() {
         });
         setTimeout(() => {
           setSnackbar({ show: false, message: "", type: "success" });
-        }, 4000); // Ensure this sets the state correctly
+        }, 4000);
       } catch (error) {
         console.error("Error during login:", error);
         setSnackbar({
@@ -127,11 +140,10 @@ export default function LoginPage() {
         });
         setTimeout(() => {
           setSnackbar({ show: false, message: "", type: "error" });
-        }, 4000); 
+        }, 4000);
       }
     },
   });
-  
 
   const generateQRCode = async () => {
     if (!userData?.uid) {
@@ -220,9 +232,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
       <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
         {userData ? (
-          
           <div className="space-y-10 min-h-screen mt-10">
-            
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 text-center">
               Welcome, {userData.firstName} {userData.lastName}!
             </h2>
@@ -247,6 +257,16 @@ export default function LoginPage() {
             <div className="flex justify-center">
               <UserInfoCard userData={userData} />
             </div>
+            {userData.membershipType === "Regular member" && (
+              <div className="flex justify-center">
+                <Button
+                  onClick={handleUpgrade}
+                  className="w-64 bg-green-500 hover:bg-green-600"
+                >
+                  Upgrade to VIP
+                </Button>
+              </div>
+            )}
             <div className="flex justify-center">
               <Button onClick={generateQRCode}>Generate QR Code</Button>
             </div>
@@ -354,6 +374,14 @@ export default function LoginPage() {
           sendPasswordReset={(email) => handleForgotPassword(email)}
           onSnackbar={handleSnackbar}
         />
+        {isUpgradeModalOpen && (
+          <UpgradeModal
+            userData={userData!}
+            showSnackbar={showSnackbar}
+            fetchUserData={fetchUserData}
+            onClose={() => setIsUpgradeModalOpen(false)}
+          />
+        )}
       </div>
     </div>
   );

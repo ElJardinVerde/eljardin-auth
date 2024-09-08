@@ -33,6 +33,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Webcam from "react-webcam";
+import { signOut } from "firebase/auth";
 
 interface FormValues {
   email: string;
@@ -60,6 +61,7 @@ export default function AdminPage() {
   const [isStreamActive, setIsStreamActive] = useState(false);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const webcamRef = useRef<Webcam>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [selectedClub, setSelectedClub] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
@@ -70,10 +72,7 @@ export default function AdminPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        const allowedAdminEmails = [
-          "eljardinverde.office@gmail.com",
-          "iulianpampu@icloud.com",
-        ];
+        const allowedAdminEmails = ["iulianpampu@icloud.com"];
         if (!allowedAdminEmails.includes(user.email || "")) {
           router.push("/");
         }
@@ -84,6 +83,19 @@ export default function AdminPage() {
     return () => unsubscribe();
   }, [router]);
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push("/login");
+    } catch (error) {
+      console.error("Error signing out: ", error);
+      setSnackbar({
+        show: true,
+        message: "Error signing out. Please try again.",
+        type: "error",
+      });
+    }
+  };
   const clubOptions = [
     { value: "El Jardin Verde", label: "El Jardin Verde" },
     { value: "Club A", label: "Club A" },
@@ -226,230 +238,267 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
-      <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 text-center mb-8">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2] p-4">
+      <div className="w-full max-w-4xl mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2] shadow-xl">
+        <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 text-center mb-8">
           Add New User
         </h2>
-        <form onSubmit={formik.handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" {...formik.getFieldProps("email")} />
-            {formik.touched.email && formik.errors.email ? (
-              <div className="text-red-500">{formik.errors.email}</div>
-            ) : null}
-          </div>
-
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              {...formik.getFieldProps("password")}
-            />
-            {formik.touched.password && formik.errors.password ? (
-              <div className="text-red-500">{formik.errors.password}</div>
-            ) : null}
-          </div>
-
-          <div>
-            <Label htmlFor="firstName">First Name</Label>
-            <Input
-              id="firstName"
-              type="text"
-              {...formik.getFieldProps("firstName")}
-            />
-            {formik.touched.firstName && formik.errors.firstName ? (
-              <div className="text-red-500">{formik.errors.firstName}</div>
-            ) : null}
-          </div>
-
-          <div>
-            <Label htmlFor="lastName">Last Name</Label>
-            <Input
-              id="lastName"
-              type="text"
-              {...formik.getFieldProps("lastName")}
-            />
-            {formik.touched.lastName && formik.errors.lastName ? (
-              <div className="text-red-500">{formik.errors.lastName}</div>
-            ) : null}
-          </div>
-
-          <div>
-            <Label htmlFor="club">Club</Label>
-            <Select
-              onValueChange={(value) => {
-                formik.setFieldValue("club", value);
-                setSelectedClub(value);
-              }}
-              value={selectedClub}
-            >
-              <SelectTrigger className="bg-slate-300">
-                <SelectValue placeholder="Select a club" />
-              </SelectTrigger>
-              <SelectContent>
-                {clubOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {formik.touched.club && formik.errors.club ? (
-              <div className="text-red-500">{formik.errors.club}</div>
-            ) : null}
-          </div>
-
-          <div>
-            <Label htmlFor="country">Country</Label>
-            <Select
-              onValueChange={(value) => {
-                formik.setFieldValue("country", value);
-                setSelectedCountry(value);
-              }}
-              value={selectedCountry}
-            >
-              <SelectTrigger className="bg-slate-300">
-                <SelectValue placeholder="Select a country" />
-              </SelectTrigger>
-              <SelectContent>
-                {countries.map((country) => (
-                  <SelectItem key={country.value} value={country.value}>
-                    {country.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {formik.touched.country && formik.errors.country ? (
-              <div className="text-red-500">{formik.errors.country}</div>
-            ) : null}
-          </div>
-
-          <div>
-            <Label htmlFor="identificationTypes">Type of ID</Label>
-            <Select
-              onValueChange={(value) => {
-                formik.setFieldValue("identificationType", value);
-                setSelectedIdentificationTypes(value);
-              }}
-              value={selectedIdentificationTypes}
-            >
-              <SelectTrigger className="bg-slate-300">
-                <SelectValue placeholder="Select ID Type" />
-              </SelectTrigger>
-              <SelectContent>
-                {identificationTypes.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {formik.touched.identificationType &&
-            formik.errors.identificationType ? (
-              <div className="text-red-500 bg-white">
-                {formik.errors.identificationType}
+        <form onSubmit={formik.handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left column */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...formik.getFieldProps("email")}
+                />
+                {formik.touched.email && formik.errors.email ? (
+                  <div className="text-red-500">{formik.errors.email}</div>
+                ) : null}
               </div>
-            ) : null}
-          </div>
 
-          <div>
-            <Label htmlFor="dob">Date of Birth</Label>
-            <Input id="dob" type="date" {...formik.getFieldProps("dob")} />
-            {formik.touched.dob && formik.errors.dob ? (
-              <div className="text-red-500">{formik.errors.dob}</div>
-            ) : null}
-          </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  {...formik.getFieldProps("password")}
+                />
+                {formik.touched.password && formik.errors.password ? (
+                  <div className="text-red-500">{formik.errors.password}</div>
+                ) : null}
+              </div>
 
-          <div>
-            <Label htmlFor="placeOfBirth">Place of Birth</Label>
-            <Input
-              id="placeOfBirth"
-              type="text"
-              {...formik.getFieldProps("placeOfBirth")}
-            />
-            {formik.touched.placeOfBirth && formik.errors.placeOfBirth ? (
-              <div className="text-red-500">{formik.errors.placeOfBirth}</div>
-            ) : null}
-          </div>
+              <div>
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  {...formik.getFieldProps("firstName")}
+                />
+                {formik.touched.firstName && formik.errors.firstName ? (
+                  <div className="text-red-500">{formik.errors.firstName}</div>
+                ) : null}
+              </div>
 
-          <div>
-            <Label htmlFor="identification">Identification with ID</Label>
-            <div className="flex items-center space-x-2">
-              <Button type="button" onClick={startCamera}>
-                <Camera className="w-4 h-4 mr-2" />
-                Camera
-              </Button>
+              <div>
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  {...formik.getFieldProps("lastName")}
+                />
+                {formik.touched.lastName && formik.errors.lastName ? (
+                  <div className="text-red-500">{formik.errors.lastName}</div>
+                ) : null}
+              </div>
+
+              <div>
+                <Label htmlFor="club">Club</Label>
+                <Select
+                  onValueChange={(value) => {
+                    formik.setFieldValue("club", value);
+                    setSelectedClub(value);
+                  }}
+                  value={selectedClub}
+                >
+                  <SelectTrigger className="bg-slate-300">
+                    <SelectValue placeholder="Select a club" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clubOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formik.touched.club && formik.errors.club ? (
+                  <div className="text-red-500">{formik.errors.club}</div>
+                ) : null}
+              </div>
             </div>
-            {formik.touched.identification && formik.errors.identification ? (
-              <div className="text-red-500">{formik.errors.identification}</div>
-            ) : null}
+
+            {/* Right column */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="country">Country</Label>
+                <Select
+                  onValueChange={(value) => {
+                    formik.setFieldValue("country", value);
+                    setSelectedCountry(value);
+                  }}
+                  value={selectedCountry}
+                >
+                  <SelectTrigger className="bg-slate-300">
+                    <SelectValue placeholder="Select a country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countries.map((country) => (
+                      <SelectItem key={country.value} value={country.value}>
+                        {country.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formik.touched.country && formik.errors.country ? (
+                  <div className="text-red-500">{formik.errors.country}</div>
+                ) : null}
+              </div>
+
+              <div>
+                <Label htmlFor="identificationTypes">Type of ID</Label>
+                <Select
+                  onValueChange={(value) => {
+                    formik.setFieldValue("identificationType", value);
+                    setSelectedIdentificationTypes(value);
+                  }}
+                  value={selectedIdentificationTypes}
+                >
+                  <SelectTrigger className="bg-slate-300">
+                    <SelectValue placeholder="Select ID Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {identificationTypes.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formik.touched.identificationType &&
+                formik.errors.identificationType ? (
+                  <div className="text-red-500 bg-white">
+                    {formik.errors.identificationType}
+                  </div>
+                ) : null}
+              </div>
+
+              <div>
+                <Label htmlFor="dob">Date of Birth</Label>
+                <Input id="dob" type="date" {...formik.getFieldProps("dob")} />
+                {formik.touched.dob && formik.errors.dob ? (
+                  <div className="text-red-500">{formik.errors.dob}</div>
+                ) : null}
+              </div>
+
+              <div>
+                <Label htmlFor="placeOfBirth">Place of Birth</Label>
+                <Input
+                  id="placeOfBirth"
+                  type="text"
+                  {...formik.getFieldProps("placeOfBirth")}
+                />
+                {formik.touched.placeOfBirth && formik.errors.placeOfBirth ? (
+                  <div className="text-red-500">
+                    {formik.errors.placeOfBirth}
+                  </div>
+                ) : null}
+              </div>
+
+              <div>
+                <Label htmlFor="membershipType" className="mb-2 block">
+                  Membership Type
+                </Label>
+                <Select
+                  onValueChange={(value) => {
+                    formik.setFieldValue("membershipType", value);
+                    setSelectedMembershipType(value);
+                  }}
+                  value={selectedMembershipType}
+                >
+                  <SelectTrigger className="bg-slate-300">
+                    <SelectValue placeholder="Select membership type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {membershipOptions.map((option) => (
+                      <SelectItem
+                        key={option.value}
+                        value={option.value}
+                        className={
+                          selectedMembershipType === option.value
+                            ? "bg-blue-100"
+                            : ""
+                        }
+                      >
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formik.touched.membershipType &&
+                formik.errors.membershipType ? (
+                  <div className="text-red-500 mt-2">
+                    {formik.errors.membershipType}
+                  </div>
+                ) : null}
+              </div>
+            </div>
           </div>
 
-          {capturedImage && (
+          {/* Full width elements */}
+          <div className="space-y-4">
             <div>
-              <img
-                src={capturedImage}
-                alt="Captured"
-                className="mt-2 max-w-full h-auto"
-              />
-            </div>
-          )}
-
-          <div>
-            <Label htmlFor="membershipType" className="mb-2 block">
-              Membership Type
-            </Label>
-            <Select
-              onValueChange={(value) => {
-                formik.setFieldValue("membershipType", value);
-                setSelectedMembershipType(value);
-              }}
-              value={selectedMembershipType}
-            >
-              <SelectTrigger className="bg-slate-300">
-                <SelectValue placeholder="Select membership type" />
-              </SelectTrigger>
-              <SelectContent>
-                {membershipOptions.map((option) => (
-                  <SelectItem
-                    key={option.value}
-                    value={option.value}
-                    className={
-                      selectedMembershipType === option.value
-                        ? "bg-blue-100"
-                        : ""
-                    }
-                  >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {formik.touched.membershipType && formik.errors.membershipType ? (
-              <div className="text-red-500 mt-2">
-                {formik.errors.membershipType}
+              <Label htmlFor="identification">Identification with ID</Label>
+              <div className="flex items-center space-x-2">
+                <Button type="button" onClick={startCamera}>
+                  <Camera className="w-4 h-4 mr-2" />
+                  Camera
+                </Button>
               </div>
-            ) : null}
+              {formik.touched.identification && formik.errors.identification ? (
+                <div className="text-red-500">
+                  {formik.errors.identification}
+                </div>
+              ) : null}
+            </div>
+
+            {capturedImage && (
+              <div>
+                <img
+                  src={capturedImage}
+                  alt="Captured"
+                  className="mt-2 max-w-full h-auto"
+                />
+              </div>
+            )}
+
+            <Card>
+              <CardContent>
+                <p className="pt-4 text-center font-bold">
+                  This Payment is made with cash!
+                </p>
+              </CardContent>
+            </Card>
+
+            <Button type="submit" className="w-full">
+              Add User
+            </Button>
           </div>
-
-          <Card>
-            <CardContent>
-              <p className="pt-4 text-center font-bold">
-                This Payment is made with cash!
-              </p>
-            </CardContent>
-          </Card>
-
-          <Button type="submit" className="w-full">
-            Add User
-          </Button>
         </form>
 
-        <Button onClick={() => router.push("/")} className="w-full mt-4">
-          Back to Dashboard
-        </Button>
+        <div className="mt-6 space-y-4">
+          <Button
+            onClick={() => router.push("/database")}
+            className="w-full"
+            variant="green"
+          >
+            Check Database
+          </Button>
+
+          <Button
+            onClick={() => router.push("/")}
+            className="w-full"
+            variant="outline"
+          >
+            Back to Dashboard
+          </Button>
+          <Button className="w-full" onClick={handleLogout} variant="destructive">
+            Logout from admin
+          </Button>
+        </div>
 
         <Snackbar
           message={snackbar.message}

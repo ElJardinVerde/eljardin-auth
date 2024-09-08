@@ -71,7 +71,7 @@ const DatabaseView: React.FC = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        const allowedEmails = ["iulianpampu@icloud.com", "eljardinverde.office@gmail.com"];
+        const allowedEmails = ["iulianpampu@icloud.com"];
         if (!allowedEmails.includes(user.email || "")) {
           router.push("/");
         } else {
@@ -292,6 +292,14 @@ const DatabaseView: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Button
+        onClick={() => router.push("/admin")}
+        className="mx-auto mt-6 bg-gray-600 hover:bg-gray-700 text-white flex items-center transition duration-300 ease-in-out"
+      >
+        <ChevronLeft className="mr-2 h-4 w-4" /> Back to Admin Page
+      </Button>
+
       <Button
         onClick={() => router.push("/")}
         className="mx-auto mt-6 bg-gray-600 hover:bg-gray-700 text-white flex items-center transition duration-300 ease-in-out"
