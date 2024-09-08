@@ -30,3 +30,14 @@
     animation: fadeIn 2s ease-in-out;
   }
 }
+
+@media (max-width: 640px) {
+  .mobile-calendar-popover {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}

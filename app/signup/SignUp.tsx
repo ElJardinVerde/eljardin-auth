@@ -698,7 +698,8 @@ export function SignUp() {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[calc(100vw-0.5rem)] sm:w-auto p-5 mx-1 my-1">
+              <PopoverContent className="w-[calc(100vw-0.5rem)] sm:w-auto p-2 mx-1 my-1 mobile-calendar-popover">
+                {" "}
                 <Calendar
                   mode="single"
                   selected={dateOfBirth || undefined}
@@ -713,12 +714,13 @@ export function SignUp() {
                   captionLayout="dropdown-buttons"
                   fromYear={1900}
                   toYear={new Date().getFullYear()}
-                  className="rounded-md border w-full sm:w-[400px] p-4"
+                  className="rounded-md border w-full sm:w-[400px] p-2"
                   classNames={{
                     months:
                       "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                     month: "space-y-4",
-                    caption: "flex flex-col space-y-2 pb-4 pt-2 px-2 relative text-black",
+                    caption:
+                      "flex flex-col space-y-2 pb-4 pt-2 px-2 relative text-black",
                     caption_label: "text-sm font-medium text-black",
                     nav: "space-x-1 flex items-center",
                     nav_button:
