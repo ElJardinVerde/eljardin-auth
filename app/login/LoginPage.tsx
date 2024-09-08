@@ -16,6 +16,7 @@ import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import MembershipCard from "./MembershipCard";
 import { sendPasswordResetEmail } from "firebase/auth";
 import ForgotPasswordModal from "./ForgotPass";
+import UserInfoCard from "../login/UserData";
 
 export default function LoginPage() {
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -29,14 +30,23 @@ export default function LoginPage() {
     firstName: string;
     lastName: string;
     email: string;
+    club?: string;
+    country?: string;
+    dob?: string;
+    identification?: string;
+    membershipActivationDate?: string;
+    membershipExpirationDate?: string;
+    membershipType?: string;
+    photo?: string;
+    placeOfBirth?: string;
   } | null>(null);
   const { theme } = useTheme();
   const router = useRouter();
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] =
     useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const fetchUserData = async (uid: string) => {
+  const fetchUserData = async (uid: string, email: string) => {
     try {
       const usersCollection = collection(db, "users");
       const q = query(usersCollection, where("uid", "==", uid));
@@ -47,13 +57,32 @@ export default function LoginPage() {
       }
       const userDoc = querySnapshot.docs[0];
       const userData = userDoc.data();
+      console.log("Fetched user data:", userData);
+
       setUserData({
         uid: userData.uid,
         firstName: userData.firstName,
         lastName: userData.lastName,
         email: userData.email,
+        club: userData.club,
+        country: userData.country,
+        dob: userData.dob?.toDate().toLocaleDateString(),
+        identification: userData.identification,
+        membershipActivationDate: userData.membershipActivationDate
+          ?.toDate()
+          .toLocaleDateString(),
+        membershipExpirationDate: userData.membershipExpirationDate
+          ?.toDate()
+          .toLocaleDateString(),
+        membershipType: userData.membershipType,
+        photo: userData.photo,
+        placeOfBirth: userData.placeOfBirth,
       });
-    } catch (error) {
+      console.log("User data set successfully");
+
+      const allowedAdminEmails = ["eljardinverde.office@gmail.com", "iulianpampu@icloud.com"];
+      setIsAdmin(allowedAdminEmails.includes(email));
+      } catch (error) {
       console.error("Error fetching user data:", error);
     }
   };
@@ -79,16 +108,16 @@ export default function LoginPage() {
           values.password
         );
         const user = userCredential.user;
-        await fetchUserData(user.uid);
+        console.log("User signed in:", user);
+        await fetchUserData(user.uid, user.email || "");
         setSnackbar({
           show: true,
           message: "Login successful!",
           type: "success",
         });
-        setTimeout(
-          () => setSnackbar({ show: false, message: "", type: "success" }),
-          4000
-        );
+        setTimeout(() => {
+          setSnackbar({ show: false, message: "", type: "success" });
+        }, 4000); // Ensure this sets the state correctly
       } catch (error) {
         console.error("Error during login:", error);
         setSnackbar({
@@ -96,13 +125,13 @@ export default function LoginPage() {
           message: "Login failed. Please check your credentials.",
           type: "error",
         });
-        setTimeout(
-          () => setSnackbar({ show: false, message: "", type: "error" }),
-          4000
-        );
+        setTimeout(() => {
+          setSnackbar({ show: false, message: "", type: "error" });
+        }, 4000); 
       }
     },
   });
+  
 
   const generateQRCode = async () => {
     if (!userData?.uid) {
@@ -191,15 +220,32 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
       <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
         {userData ? (
+          
           <div className="space-y-10 min-h-screen mt-10">
+            
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 text-center">
               Welcome, {userData.firstName} {userData.lastName}!
             </h2>
+            {isAdmin && (
+              <div className="text-center">
+                <p className="text-green-500 font-bold">Admin Account</p>
+              </div>
+            )}
+            {isAdmin && (
+              <div className="flex justify-center">
+                <Button onClick={() => router.push("/admin")} className="w-64">
+                  Go to Admin Page
+                </Button>
+              </div>
+            )}
             <p className="text-center text-gray-600 dark:text-gray-400">
               This is your email used for logging in: {userData.email}
             </p>
             <div className="flex justify-center">
               <MembershipCard userData={userData} />
+            </div>
+            <div className="flex justify-center">
+              <UserInfoCard userData={userData} />
             </div>
             <div className="flex justify-center">
               <Button onClick={generateQRCode}>Generate QR Code</Button>

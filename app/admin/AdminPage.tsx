@@ -1,0 +1,506 @@
+"use client";
+
+import React, { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { collection, addDoc } from "firebase/firestore";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+} from "firebase/auth";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth, db, storage } from "../api/firebaseConfig";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Snackbar } from "../components/Snackbar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Camera } from "lucide-react";
+import countryList from "react-select-country-list";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import Webcam from "react-webcam";
+
+interface FormValues {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  club: string;
+  country: string;
+  dob: string;
+  identification: string;
+  identificationType: string;
+  membershipType: string;
+  placeOfBirth: string;
+}
+
+export default function AdminPage() {
+  const router = useRouter();
+  const [snackbar, setSnackbar] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({ show: false, message: "", type: "success" });
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isStreamActive, setIsStreamActive] = useState(false);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const webcamRef = useRef<Webcam>(null);
+
+  const [selectedClub, setSelectedClub] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedMembershipType, setSelectedMembershipType] = useState("");
+  const [selectedIdentificationTypes, setSelectedIdentificationTypes] =
+    useState("");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const allowedAdminEmails = [
+          "eljardinverde.office@gmail.com",
+          "iulianpampu@icloud.com",
+        ];
+        if (!allowedAdminEmails.includes(user.email || "")) {
+          router.push("/");
+        }
+      } else {
+        router.push("/");
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  const clubOptions = [
+    { value: "El Jardin Verde", label: "El Jardin Verde" },
+    { value: "Club A", label: "Club A" },
+    { value: "Club B", label: "Club B" },
+    { value: "Club C", label: "Club C" },
+  ];
+
+  const membershipOptions = [
+    { value: "Regular Membership", label: "Regular Membership - 25 Euro" },
+    { value: "VIP Membership", label: "VIP Membership - 50 Euro" },
+  ];
+
+  const identificationTypes = [
+    { value: "ID", label: "ID" },
+    { value: "Passport", label: "Passport" },
+    { value: "Drivers License", label: "Driver's License" },
+  ];
+
+  const countries = countryList().getData();
+
+  const formik = useFormik<FormValues>({
+    initialValues: {
+      email: "",
+      password: "",
+      firstName: "",
+      lastName: "",
+      club: "",
+      country: "",
+      dob: "",
+      identification: "",
+      identificationType: "",
+      membershipType: "",
+      placeOfBirth: "",
+    },
+    validationSchema: Yup.object({
+      email: Yup.string().email("Invalid email address").required("Required"),
+      password: Yup.string()
+        .min(8, "Must be at least 8 characters")
+        .required("Required"),
+      firstName: Yup.string().required("Required"),
+      lastName: Yup.string().required("Required"),
+      club: Yup.string().required("Required"),
+      country: Yup.string().required("Required"),
+      dob: Yup.date().required("Required"),
+      identification: Yup.string().required("Required"),
+      identificationType: Yup.string().required("Required"),
+      membershipType: Yup.string().required("Required"),
+      placeOfBirth: Yup.string().required("Required"),
+    }),
+    onSubmit: async (values) => {
+      try {
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          values.email,
+          values.password
+        );
+        const user = userCredential.user;
+
+        let photoURL = "";
+        if (capturedImage) {
+          const imageRef = ref(storage, `userPhotos/${user.uid}`);
+          const response = await fetch(capturedImage);
+          const blob = await response.blob();
+          await uploadBytes(imageRef, blob);
+          photoURL = await getDownloadURL(imageRef);
+        }
+
+        await addDoc(collection(db, "users"), {
+          uid: user.uid,
+          email: values.email,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          club: values.club,
+          country: values.country,
+          dob: new Date(values.dob),
+          identification: values.identification,
+          identificationType: values.identificationType,
+          membershipType: values.membershipType,
+          placeOfBirth: values.placeOfBirth,
+          membershipActivationDate: new Date(),
+          membershipExpirationDate: new Date(
+            new Date().setFullYear(new Date().getFullYear() + 1)
+          ),
+          isAdmin: false,
+          photo: photoURL,
+          paymentMethod: "cash",
+        });
+
+        setSnackbar({
+          show: true,
+          message: "User added successfully!",
+          type: "success",
+        });
+        formik.resetForm();
+        setCapturedImage(null);
+        setCapturedPhoto(null);
+      } catch (error) {
+        console.error("Error adding new user:", error);
+        setSnackbar({
+          show: true,
+          message: "Error adding user. Please try again.",
+          type: "error",
+        });
+      }
+    },
+  });
+
+  const startCamera = async () => {
+    setIsCameraOpen(true);
+  };
+
+  const stopCamera = () => {
+    setIsCameraOpen(false);
+  };
+
+  const capturePhoto = () => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+      setCapturedPhoto(imageSrc);
+      setCapturedImage(imageSrc);
+      setIsStreamActive(false);
+      formik.setFieldValue("identification", imageSrc);
+    }
+  };
+
+  const handleSavePhoto = () => {
+    if (capturedImage) {
+      formik.setFieldValue("identification", capturedImage);
+      stopCamera();
+      setSnackbar({
+        show: true,
+        message: "Photo saved successfully",
+        type: "success",
+      });
+    }
+  };
+
+  const handleCloseCamera = () => {
+    stopCamera();
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
+      <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 text-center mb-8">
+          Add New User
+        </h2>
+        <form onSubmit={formik.handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" {...formik.getFieldProps("email")} />
+            {formik.touched.email && formik.errors.email ? (
+              <div className="text-red-500">{formik.errors.email}</div>
+            ) : null}
+          </div>
+
+          <div>
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              {...formik.getFieldProps("password")}
+            />
+            {formik.touched.password && formik.errors.password ? (
+              <div className="text-red-500">{formik.errors.password}</div>
+            ) : null}
+          </div>
+
+          <div>
+            <Label htmlFor="firstName">First Name</Label>
+            <Input
+              id="firstName"
+              type="text"
+              {...formik.getFieldProps("firstName")}
+            />
+            {formik.touched.firstName && formik.errors.firstName ? (
+              <div className="text-red-500">{formik.errors.firstName}</div>
+            ) : null}
+          </div>
+
+          <div>
+            <Label htmlFor="lastName">Last Name</Label>
+            <Input
+              id="lastName"
+              type="text"
+              {...formik.getFieldProps("lastName")}
+            />
+            {formik.touched.lastName && formik.errors.lastName ? (
+              <div className="text-red-500">{formik.errors.lastName}</div>
+            ) : null}
+          </div>
+
+          <div>
+            <Label htmlFor="club">Club</Label>
+            <Select
+              onValueChange={(value) => {
+                formik.setFieldValue("club", value);
+                setSelectedClub(value);
+              }}
+              value={selectedClub}
+            >
+              <SelectTrigger className="bg-slate-300">
+                <SelectValue placeholder="Select a club" />
+              </SelectTrigger>
+              <SelectContent>
+                {clubOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formik.touched.club && formik.errors.club ? (
+              <div className="text-red-500">{formik.errors.club}</div>
+            ) : null}
+          </div>
+
+          <div>
+            <Label htmlFor="country">Country</Label>
+            <Select
+              onValueChange={(value) => {
+                formik.setFieldValue("country", value);
+                setSelectedCountry(value);
+              }}
+              value={selectedCountry}
+            >
+              <SelectTrigger className="bg-slate-300">
+                <SelectValue placeholder="Select a country" />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map((country) => (
+                  <SelectItem key={country.value} value={country.value}>
+                    {country.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formik.touched.country && formik.errors.country ? (
+              <div className="text-red-500">{formik.errors.country}</div>
+            ) : null}
+          </div>
+
+          <div>
+            <Label htmlFor="identificationTypes">Type of ID</Label>
+            <Select
+              onValueChange={(value) => {
+                formik.setFieldValue("identificationType", value);
+                setSelectedIdentificationTypes(value);
+              }}
+              value={selectedIdentificationTypes}
+            >
+              <SelectTrigger className="bg-slate-300">
+                <SelectValue placeholder="Select ID Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {identificationTypes.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formik.touched.identificationType &&
+            formik.errors.identificationType ? (
+              <div className="text-red-500 bg-white">
+                {formik.errors.identificationType}
+              </div>
+            ) : null}
+          </div>
+
+          <div>
+            <Label htmlFor="dob">Date of Birth</Label>
+            <Input id="dob" type="date" {...formik.getFieldProps("dob")} />
+            {formik.touched.dob && formik.errors.dob ? (
+              <div className="text-red-500">{formik.errors.dob}</div>
+            ) : null}
+          </div>
+
+          <div>
+            <Label htmlFor="placeOfBirth">Place of Birth</Label>
+            <Input
+              id="placeOfBirth"
+              type="text"
+              {...formik.getFieldProps("placeOfBirth")}
+            />
+            {formik.touched.placeOfBirth && formik.errors.placeOfBirth ? (
+              <div className="text-red-500">{formik.errors.placeOfBirth}</div>
+            ) : null}
+          </div>
+
+          <div>
+            <Label htmlFor="identification">Identification with ID</Label>
+            <div className="flex items-center space-x-2">
+              <Button type="button" onClick={startCamera}>
+                <Camera className="w-4 h-4 mr-2" />
+                Camera
+              </Button>
+            </div>
+            {formik.touched.identification && formik.errors.identification ? (
+              <div className="text-red-500">{formik.errors.identification}</div>
+            ) : null}
+          </div>
+
+          {capturedImage && (
+            <div>
+              <img
+                src={capturedImage}
+                alt="Captured"
+                className="mt-2 max-w-full h-auto"
+              />
+            </div>
+          )}
+
+          <div>
+            <Label htmlFor="membershipType" className="mb-2 block">
+              Membership Type
+            </Label>
+            <Select
+              onValueChange={(value) => {
+                formik.setFieldValue("membershipType", value);
+                setSelectedMembershipType(value);
+              }}
+              value={selectedMembershipType}
+            >
+              <SelectTrigger className="bg-slate-300">
+                <SelectValue placeholder="Select membership type" />
+              </SelectTrigger>
+              <SelectContent>
+                {membershipOptions.map((option) => (
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className={
+                      selectedMembershipType === option.value
+                        ? "bg-blue-100"
+                        : ""
+                    }
+                  >
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formik.touched.membershipType && formik.errors.membershipType ? (
+              <div className="text-red-500 mt-2">
+                {formik.errors.membershipType}
+              </div>
+            ) : null}
+          </div>
+
+          <Card>
+            <CardContent>
+              <p className="pt-4 text-center font-bold">
+                This Payment is made with cash!
+              </p>
+            </CardContent>
+          </Card>
+
+          <Button type="submit" className="w-full">
+            Add User
+          </Button>
+        </form>
+
+        <Button onClick={() => router.push("/")} className="w-full mt-4">
+          Back to Dashboard
+        </Button>
+
+        <Snackbar
+          message={snackbar.message}
+          type={snackbar.type}
+          show={snackbar.show}
+          onClose={() => setSnackbar({ ...snackbar, show: false })}
+        />
+      </div>
+
+      <Dialog
+        open={isCameraOpen}
+        onOpenChange={(open) => {
+          if (!open) handleCloseCamera();
+          setIsCameraOpen(open);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Take ID Picture</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            {isCameraOpen && (
+              <Webcam
+                audio={false}
+                ref={webcamRef}
+                screenshotFormat="image/jpeg"
+                videoConstraints={{ facingMode: "user" }}
+              />
+            )}
+          </div>
+          <DialogFooter className="sm:justify-start">
+            {!capturedPhoto ? (
+              <Button type="button" onClick={capturePhoto}>
+                Take Picture
+              </Button>
+            ) : (
+              <>
+                <Button type="button" onClick={handleSavePhoto}>
+                  Save
+                </Button>
+                <Button type="button" onClick={() => setCapturedPhoto(null)}>
+                  Retake
+                </Button>
+              </>
+            )}
+            <Button type="button" onClick={handleCloseCamera}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

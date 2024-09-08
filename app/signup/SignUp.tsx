@@ -1,4 +1,5 @@
 "use client";
+
 import dynamic from "next/dynamic";
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -19,17 +20,23 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Button } from "@/components/ui/button";
 import Webcam, { WebcamProps } from "react-webcam";
 import { loadStripe } from "@stripe/stripe-js";
-//import { Stripe, StripeError } from "@stripe/stripe-js";
 import {
   useStripe,
   useElements,
   PaymentElement,
   Elements,
-  CardElement,
 } from "@stripe/react-stripe-js";
-import { motion, AnimatePresence } from 'framer-motion';
-
-
+import { motion, AnimatePresence } from "framer-motion";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { shadCn } from "@/lib/utils";
+import { DropdownProps, CustomComponents } from "react-day-picker";
 
 const stripePromise = loadStripe(
   "pk_test_51Ob2fwJPY3RNRZWOPMWKBlqBBlmXxAOOmPK8Oc1q8RYGckaOADrxaHPIARD1NGV3h8PaCrnCsQxLwPCWn7hQdYne00MdCsfgG5"
@@ -64,7 +71,6 @@ export function SignUp() {
   const elements = useElements();
   const [clientSecret, setClientSecret] = useState("");
 
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
   const [country, setCountry] = useState<any>(null);
   const [snackbar, setSnackbar] = useState<{
@@ -89,6 +95,11 @@ export function SignUp() {
     "pending" | "success" | "failed"
   >("pending");
 
+  const [membershipActivationDate, setMembershipActivationDate] =
+    useState<Date | null>(null);
+  const [membershipExpirationDate, setMembershipExpirationDate] =
+    useState<Date | null>(null);
+
   useEffect(() => {
     async function fetchPaymentSheet() {
       try {
@@ -97,15 +108,15 @@ export function SignUp() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ amount: 5000 }), 
+          body: JSON.stringify({ amount: 5000 }),
         });
-  
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-  
+
         const data = await response.json();
-        
+
         if (data.paymentIntent && data.ephemeralKey && data.customer) {
           setClientSecret(data.paymentIntent);
           setStripeElementsOptions({
@@ -119,11 +130,11 @@ export function SignUp() {
         setSnackbar({
           show: true,
           message: "Failed to initialize payment. Please try again.",
-          type: "error"
+          type: "error",
         });
       }
     }
-  
+
     fetchPaymentSheet();
   }, []);
 
@@ -135,16 +146,13 @@ export function SignUp() {
     const handleMembershipSelection = async (amount: number, type: string) => {
       setMembership(type);
       try {
-        const response = await fetch(
-          "/api/payment",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ amount }),
-          }
-        );
+        const response = await fetch("/api/payment", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ amount }),
+        });
         const data = await response.json();
         if (data.clientSecret) {
           setClientSecret(data.clientSecret);
@@ -247,8 +255,10 @@ export function SignUp() {
           className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md max-w-xl w-full mx-auto"
         >
           <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">
-            Complete your payment for{' '}
-            <span className="text-blue-600 dark:text-blue-400">{selectedMembership}</span>
+            Complete your payment for{" "}
+            <span className="text-blue-600 dark:text-blue-400">
+              {selectedMembership}
+            </span>
           </h3>
           <div className="mb-6">
             <PaymentElement className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg" />
@@ -296,18 +306,26 @@ export function SignUp() {
                   </h3>
                   <div className="space-y-4">
                     <button
-                      onClick={() => handleMembershipSelection(2500, "Regular member")}
+                      onClick={() =>
+                        handleMembershipSelection(2500, "Regular member")
+                      }
                       className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out flex items-center justify-between"
                     >
                       <span>Regular member</span>
-                      <span className="bg-blue-500 py-1 px-2 rounded-md text-sm">25 EUR</span>
+                      <span className="bg-blue-500 py-1 px-2 rounded-md text-sm">
+                        25 EUR
+                      </span>
                     </button>
                     <button
-                      onClick={() => handleMembershipSelection(5000, "VIP member")}
+                      onClick={() =>
+                        handleMembershipSelection(5000, "VIP member")
+                      }
                       className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out flex items-center justify-between"
                     >
                       <span>VIP member</span>
-                      <span className="bg-purple-500 py-1 px-2 rounded-md text-sm">50 EUR</span>
+                      <span className="bg-purple-500 py-1 px-2 rounded-md text-sm">
+                        50 EUR
+                      </span>
                     </button>
                   </div>
                   <button
@@ -318,7 +336,10 @@ export function SignUp() {
                   </button>
                 </div>
               ) : (
-                <Elements stripe={stripePromise} options={stripeElementsOptions}>
+                <Elements
+                  stripe={stripePromise}
+                  options={stripeElementsOptions}
+                >
                   <StripePaymentForm />
                 </Elements>
               )}
@@ -340,7 +361,6 @@ export function SignUp() {
   const handleDateSelect = (date: React.SetStateAction<Date | null>) => {
     setDateOfBirth(date);
     formik.setFieldValue("dob", date);
-    setIsDatePickerOpen(false);
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -364,6 +384,7 @@ export function SignUp() {
       email: "",
       password: "",
       retypePassword: "",
+      club: "",
     },
     validationSchema: Yup.object({
       firstname: Yup.string().required("First name is required"),
@@ -389,6 +410,7 @@ export function SignUp() {
       retypePassword: Yup.string()
         .required("Retype your password")
         .oneOf([Yup.ref("password")], "Passwords must match"),
+      club: Yup.string().required("Club is required"),
     }),
     onSubmit: async (values) => {
       if (!isOver21(values.dob)) {
@@ -441,6 +463,14 @@ export function SignUp() {
           email: values.email,
           photo: photoURL,
           password: hashedPassword,
+          club: values.club,
+          membershipActivationDate: new Date(),
+          membershipExpirationDate: new Date(
+            new Date().setFullYear(new Date().getFullYear() + 1)
+          ),
+          isAdmin: false,
+          membershipType: membership,
+          paymentMethod: "credit card",
         });
 
         setSnackbar({
@@ -543,10 +573,8 @@ export function SignUp() {
     try {
       const result = await stripe.confirmPayment({
         elements,
-        confirmParams: {
-          // Optionally you can add redirect URL or other parameters here
-        },
-        redirect: "if_required", // this prevents redirecting on success
+        confirmParams: {},
+        redirect: "if_required",
       });
 
       if (result.error) {
@@ -559,11 +587,18 @@ export function SignUp() {
       } else if (result.paymentIntent?.status === "succeeded") {
         console.log("Payment succeeded!");
         setPaymentSuccess(true);
+        setPaymentStatus("success");
+        const activationDate = new Date();
+        const expirationDate = new Date(activationDate);
+        expirationDate.setFullYear(expirationDate.getFullYear() + 1);
+        setMembershipActivationDate(activationDate);
+        setMembershipExpirationDate(expirationDate);
         setSnackbar({
           show: true,
-          message: "Payment successful!",
+          message: "Payment successful! Now you can submit your membership!",
           type: "success",
         });
+        setIsPaymentModalOpen(false);
       } else {
         console.error("Unexpected payment result:", result);
         setSnackbar({
@@ -580,6 +615,28 @@ export function SignUp() {
         type: "error",
       });
     }
+  };
+
+  const Dropdown = React.forwardRef<HTMLSelectElement, DropdownProps>(
+    ({ value, onChange, children, ...props }, ref): JSX.Element => {
+      return (
+        <select
+          ref={ref}
+          value={value as string}
+          onChange={onChange}
+          className="w-full bg-white border border-gray-300 text-black p-2 rounded-md cursor-pointer outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary appearance-none"
+          {...props}
+        >
+          {children}
+        </select>
+      );
+    }
+  );
+
+  Dropdown.displayName = "Dropdown";
+
+  const components: CustomComponents = {
+    Dropdown: Dropdown as CustomComponents["Dropdown"],
   };
 
   return (
@@ -621,31 +678,85 @@ export function SignUp() {
               ) : null}
             </LabelInputContainer>
           </div>
+
           <LabelInputContainer className="mb-4">
             <Label htmlFor="dob">Date of Birth</Label>
-            <Input
-              id="dob"
-              placeholder="Click to select your date of birth"
-              value={dateOfBirth ? dateOfBirth.toLocaleDateString() : ""}
-              onClick={() => setIsDatePickerOpen(true)}
-              readOnly
-              className="cursor-pointer"
-            />
-            <MobileDatePicker
-              isOpen={isDatePickerOpen}
-              onSelect={handleDateSelect}
-              onCancel={() => setIsDatePickerOpen(false)}
-              max={new Date()}
-              theme="ios"
-              confirmText="OK"
-              cancelText="Cancel"
-              headerFormat="YYYY-MM-DD"
-              dateFormat={["YYYY", "MM", "DD"]}
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={shadCn(
+                    "w-full justify-start text-left font-normal",
+                    !dateOfBirth && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateOfBirth ? (
+                    format(dateOfBirth, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[calc(100vw-0.5rem)] sm:w-auto p-0 mx-1 my-1">
+                <Calendar
+                  mode="single"
+                  selected={dateOfBirth || undefined}
+                  onSelect={(date: Date | undefined) => {
+                    setDateOfBirth(date || null);
+                    formik.setFieldValue("dob", date || null);
+                  }}
+                  disabled={(date) =>
+                    date > new Date() || date < new Date("1900-01-01")
+                  }
+                  initialFocus
+                  captionLayout="dropdown-buttons"
+                  fromYear={1900}
+                  toYear={new Date().getFullYear()}
+                  className="rounded-md border w-full sm:w-[400px] p-4"
+                  classNames={{
+                    months:
+                      "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                    month: "space-y-4",
+                    caption: "flex flex-col space-y-2 pb-4 pt-2 px-2 relative text-black",
+                    caption_label: "text-sm font-medium text-black",
+                    nav: "space-x-1 flex items-center",
+                    nav_button:
+                      "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 text-white",
+                    nav_button_previous: "absolute left-2 top-2",
+                    nav_button_next: "absolute right-2 top-2",
+                    table: "w-full border-collapse space-y-1",
+                    head_row: "flex w-full",
+                    head_cell:
+                      "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
+                    row: "flex w-full mt-2",
+                    cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20 w-full",
+                    day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+                    day_selected:
+                      "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                    day_today: "bg-accent text-accent-foreground",
+                    day_outside: "text-muted-foreground opacity-50",
+                    day_disabled: "text-muted-foreground opacity-50",
+                    day_range_middle:
+                      "aria-selected:bg-accent aria-selected:text-accent-foreground",
+                    day_hidden: "invisible",
+                    caption_dropdowns: "flex flex-col space-y-2",
+                    dropdown:
+                      "bg-white border border-gray-300 text-black p-2 rounded-md cursor-pointer outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary",
+                    dropdown_month: "w-full",
+                    dropdown_year: "w-full",
+                    dropdown_icon:
+                      "absolute right-2 top-1/2 transform -translate-y-1/2",
+                  }}
+                  components={components}
+                />
+              </PopoverContent>
+            </Popover>
             {formik.touched.dob && formik.errors.dob ? (
               <div className="text-red-600">{formik.errors.dob}</div>
             ) : null}
           </LabelInputContainer>
+
           <LabelInputContainer className="mb-4">
             <Label htmlFor="placeOfBirth">Place of Birth</Label>
             <Input
@@ -678,6 +789,7 @@ export function SignUp() {
               </div>
             ) : null}
           </LabelInputContainer>
+
           <LabelInputContainer className="mb-4">
             <Label htmlFor="formOfIdentification">Form of Identification</Label>
             <div className="relative p-[2px] rounded-lg group/input">
@@ -697,6 +809,25 @@ export function SignUp() {
               <div className="text-red-600">
                 {formik.errors.formOfIdentification}
               </div>
+            ) : null}
+          </LabelInputContainer>
+
+          <LabelInputContainer className="mb-4">
+            <Label htmlFor="club">Select Club</Label>
+            <div className="relative p-[2px] rounded-lg group/input">
+              <select
+                id="club"
+                className="w-full h-10 px-3 py-2 border-none rounded-md bg-gray-50 dark:bg-zinc-800 text-black dark:text-white shadow-input focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600"
+                {...formik.getFieldProps("club")}
+              >
+                <option value="">Select an option</option>
+                <option value="eljardinverde">El Jardin Verde</option>
+                <option value="cluba">Club A</option>
+                <option value="clubb">Club B</option>
+              </select>
+            </div>
+            {formik.touched.club && formik.errors.club ? (
+              <div className="text-red-600">{formik.errors.club}</div>
             ) : null}
           </LabelInputContainer>
 
