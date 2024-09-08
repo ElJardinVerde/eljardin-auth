@@ -19,6 +19,7 @@ import ForgotPasswordModal from "./ForgotPass";
 import UserInfoCard from "../login/UserData";
 import UpgradeModal from "./UpgradeModal";
 import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 
 const stripePromise = loadStripe(
   "pk_test_51Ob2fwJPY3RNRZWOPMWKBlqBBlmXxAOOmPK8Oc1q8RYGckaOADrxaHPIARD1NGV3h8PaCrnCsQxLwPCWn7hQdYne00MdCsfgG5"
@@ -375,12 +376,14 @@ export default function LoginPage() {
           onSnackbar={handleSnackbar}
         />
         {isUpgradeModalOpen && (
-          <UpgradeModal
-            userData={userData!}
-            showSnackbar={showSnackbar}
-            fetchUserData={fetchUserData}
-            onClose={() => setIsUpgradeModalOpen(false)}
-          />
+          <Elements stripe={stripePromise}>
+            <UpgradeModal
+              userData={userData!}
+              showSnackbar={showSnackbar}
+              fetchUserData={fetchUserData}
+              onClose={() => setIsUpgradeModalOpen(false)}
+            />
+          </Elements>
         )}
       </div>
     </div>
