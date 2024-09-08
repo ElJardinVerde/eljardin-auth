@@ -698,7 +698,7 @@ export function SignUp() {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[calc(100vw-0.5rem)] sm:w-auto p-0 mx-1 my-1">
+              <PopoverContent className="w-[calc(100vw-0.5rem)] sm:w-auto p-5 mx-1 my-1">
                 <Calendar
                   mode="single"
                   selected={dateOfBirth || undefined}
