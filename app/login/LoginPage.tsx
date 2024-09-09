@@ -55,9 +55,32 @@ export default function LoginPage() {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
-  const handleUpgrade = () => {
+  const handleUpgrade = async () => {
     console.log("Opening upgrade modal...");
-    setIsUpgradeModalOpen(true);
+
+    try {
+      const response = await fetch("/api/payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: 2500 }),
+      });
+
+      const data = await response.json();
+      if (data.clientSecret) {
+        setClientSecret(data.clientSecret);
+        setIsUpgradeModalOpen(true);
+        console.log("Client secret set successfully");
+      } else {
+        throw new Error("No client secret received from the server");
+      }
+    } catch (error) {
+      console.error("Error creating payment intent:", error);
+      setSnackbar({
+        show: true,
+        message: "Failed to initialize payment. Please try again.",
+        type: "error",
+      });
+    }
   };
 
   const fetchUserData = async (uid: string, email: string) => {
@@ -375,8 +398,8 @@ export default function LoginPage() {
           sendPasswordReset={(email) => handleForgotPassword(email)}
           onSnackbar={handleSnackbar}
         />
-        {isUpgradeModalOpen && (
-          <Elements stripe={stripePromise}>
+        {isUpgradeModalOpen && clientSecret && (
+          <Elements stripe={stripePromise} options={{ clientSecret }}>
             <UpgradeModal
               userData={userData!}
               showSnackbar={showSnackbar}

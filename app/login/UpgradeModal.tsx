@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
-import { Elements } from '@stripe/react-stripe-js';
-import { doc, updateDoc } from "firebase/firestore";
+import React, { useState } from "react";
+import {
+  useStripe,
+  useElements,
+  PaymentElement,
+} from "@stripe/react-stripe-js";
+import { collection, query, where, getDocs, setDoc } from "firebase/firestore";
 import { db } from "../api/firebaseConfig";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface UpgradeModalProps {
   userData: {
@@ -22,43 +25,19 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
   fetchUserData,
   onClose,
 }) => {
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const stripe = useStripe();
   const elements = useElements();
 
-  useEffect(() => {
-    const createPaymentIntent = async () => {
-      try {
-        const response = await fetch("/api/payment", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ amount: 2500 }), // 25 EUR in cents
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setClientSecret(data.clientSecret);
-      } catch (error) {
-        console.error("Error creating payment intent:", error);
-        showSnackbar("Failed to initialize payment. Please try again.", "error");
-      }
-    };
-
-    createPaymentIntent();
-  }, [showSnackbar]);
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handlePaymentSubmission = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
     setIsProcessing(true);
 
-    if (!stripe || !elements || !clientSecret) {
-      showSnackbar("Payment processing is not ready. Please try again.", "error");
+    if (!stripe || !elements) {
+      console.error("Stripe.js has not loaded yet.");
+      showSnackbar("Stripe.js is not loaded. Please try again.", "error");
       setIsProcessing(false);
       return;
     }
@@ -73,21 +52,51 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
       });
 
       if (result.error) {
-        showSnackbar(result.error.message || "An error occurred during payment.", "error");
-      } else if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
-        const userRef = doc(db, "users", userData.uid);
-        await updateDoc(userRef, {
-          membershipType: "VIP Membership",
-          membershipUpgradeDate: new Date(),
-          membershipExpirationDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-        });
+        showSnackbar(
+          result.error.message || "An error occurred during payment.",
+          "error"
+        );
+      } else if (
+        result.paymentIntent &&
+        result.paymentIntent.status === "succeeded"
+      ) {
+        console.log("Payment succeeded!");
 
-        showSnackbar("Upgrade to VIP successful!", "success");
-        await fetchUserData(userData.uid, userData.email);
-        onClose();
+        // Query the users collection to find the document with the matching uid
+        const usersCollection = collection(db, "users");
+        const q = query(usersCollection, where("uid", "==", userData.uid));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const userDoc = querySnapshot.docs[0].ref; // Get the reference to the document
+
+          // Update the document with the new membership information
+          await setDoc(
+            userDoc,
+            {
+              membershipType: "VIP Membership",
+              membershipUpgradeDate: new Date(),
+              membershipExpirationDate: new Date(
+                new Date().setFullYear(new Date().getFullYear() + 1)
+              ),
+            },
+            { merge: true } // Merge with existing fields
+          );
+
+          showSnackbar("Upgrade to VIP successful!", "success");
+          onClose();
+
+          // Fetch updated user data
+          await fetchUserData(userData.uid, userData.email);
+        } else {
+          console.error("No document found for this user.");
+          showSnackbar("No document found for this user.", "error");
+        }
+      } else {
+        showSnackbar("Unexpected payment result. Please try again.", "error");
       }
     } catch (error) {
-      console.error("Payment failed", error);
+      console.error("Error during payment:", error);
       showSnackbar("Payment failed. Please try again.", "error");
     } finally {
       setIsProcessing(false);
@@ -95,42 +104,32 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-    >
+    <AnimatePresence>
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl max-w-md w-full mx-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       >
-        <h3 className="text-2xl font-bold text-gray-800 dark:text-white text-center mb-6">
-          Upgrade to VIP Membership
-        </h3>
-        {clientSecret ? (
-          <form onSubmit={handleSubmit}>
-            <PaymentElement options={{ layout: "tabs" }} />
-            <div className="mt-6">
-              <Button
-                type="submit"
-                disabled={isProcessing || !stripe || !elements}
-                className="w-full"
-              >
-                {isProcessing ? "Processing..." : "Pay €25 and Upgrade"}
-              </Button>
-            </div>
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl max-w-md w-full mx-4"
+        >
+          <form onSubmit={handlePaymentSubmission}>
+            <PaymentElement />
+            <button
+              type="submit"
+              disabled={isProcessing || !stripe || !elements}
+            >
+              {isProcessing ? "Processing..." : "Submit Payment"}
+            </button>
+            <button onClick={onClose}>Cancel</button>
           </form>
-        ) : (
-          <p className="text-center">Loading payment form...</p>
-        )}
-        <Button onClick={onClose} className="w-full mt-4">
-          Cancel
-        </Button>
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </AnimatePresence>
   );
 };
 
