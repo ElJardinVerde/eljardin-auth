@@ -80,13 +80,12 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
                 new Date().setFullYear(new Date().getFullYear() + 1)
               ),
             },
-            { merge: true } // Merge with existing fields
+            { merge: true }
           );
 
           showSnackbar("Upgrade to VIP successful!", "success");
           onClose();
 
-          // Fetch updated user data
           await fetchUserData(userData.uid, userData.email);
         } else {
           console.error("No document found for this user.");
@@ -119,13 +118,21 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
         >
           <form onSubmit={handlePaymentSubmission}>
             <PaymentElement />
-            <button
+            <Button
               type="submit"
+              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isProcessing || !stripe || !elements}
             >
               {isProcessing ? "Processing..." : "Submit Payment"}
-            </button>
-            <button onClick={onClose}>Cancel</button>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full py-3 px-4 mt-4 border-gray-300 text-gray-600 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-600 dark:border-gray-600 transition duration-200 ease-in-out"
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
           </form>
         </motion.div>
       </motion.div>
