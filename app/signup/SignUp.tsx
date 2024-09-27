@@ -94,11 +94,17 @@ export function SignUp() {
   const [paymentStatus, setPaymentStatus] = useState<
     "pending" | "success" | "failed"
   >("pending");
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
 
   const [membershipActivationDate, setMembershipActivationDate] =
     useState<Date | null>(null);
   const [membershipExpirationDate, setMembershipExpirationDate] =
     useState<Date | null>(null);
+
+  const [capturedIDPhoto, setCapturedIDPhoto] = useState<string | null>(null);
+  const [idPhotoStatus, setIDPhotoStatus] = useState<string>("");
+  const [isIDCameraOpen, setIsIDCameraOpen] = useState(false);
+  const [isIDModalOpen, setIsIDModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchPaymentSheet() {
@@ -220,6 +226,9 @@ export function SignUp() {
             result.paymentIntent.status === "succeeded"
           ) {
             console.log("Payment succeeded!");
+            const intentId = result.paymentIntent.id;
+            setPaymentIntentId(intentId);
+            console.log("Payment intent ID:", paymentIntentId);
             setPaymentSuccess(true);
             setPaymentStatus("success");
             setSnackbar({
@@ -381,6 +390,7 @@ export function SignUp() {
       countryOfResidence: null as { label: string; value: string } | null,
       formOfIdentification: "",
       uploadPhoto: null as File | string | null,
+      uploadIDPhoto: null as File | string | null,
       email: "",
       password: "",
       retypePassword: "",
@@ -401,6 +411,7 @@ export function SignUp() {
         "Form of identification is required"
       ),
       uploadPhoto: Yup.mixed().required("Photo is required"),
+      uploadIDPhoto: Yup.mixed().required("ID photo is required"),
       email: Yup.string()
         .email("Invalid email address")
         .required("Email is required"),
@@ -421,7 +432,7 @@ export function SignUp() {
         });
         return;
       }
-      if (!paymentSuccess) {
+      if (!paymentSuccess || !paymentIntentId) {
         setSnackbar({
           show: true,
           message: "Complete payment to register.",
@@ -462,6 +473,7 @@ export function SignUp() {
           identification: values.formOfIdentification,
           email: values.email,
           photo: photoURL,
+          idPhoto: capturedIDPhoto,
           password: hashedPassword,
           club: values.club,
           membershipActivationDate: new Date(),
@@ -471,6 +483,7 @@ export function SignUp() {
           isAdmin: false,
           membershipType: membership,
           paymentMethod: "credit card",
+          paymentIntentId: paymentIntentId,
         });
 
         setSnackbar({
@@ -512,6 +525,25 @@ export function SignUp() {
 
   const handleBackClick = () => {
     router.push("/");
+  };
+
+  const handleIDCapturePhoto = useCallback(() => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+      setCapturedIDPhoto(imageSrc);
+      formik.setFieldValue("uploadIDPhoto", imageSrc);
+      setIDPhotoStatus("ID Photo was taken");
+      setIsIDCameraOpen(false);
+    }
+  }, [webcamRef, formik]);
+
+  const handleIDFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    if (file) {
+      formik.setFieldValue("uploadIDPhoto", file);
+      setIDPhotoStatus("ID Photo was uploaded");
+    }
+    setIsIDModalOpen(false);
   };
 
   const customStyles = {
@@ -900,6 +932,90 @@ export function SignUp() {
                   </Button>
                   <Button
                     onClick={() => setIsCameraOpen(false)}
+                    className="mt-4 w-full"
+                  >
+                    Close Camera
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <LabelInputContainer className="mb-4">
+              <Label htmlFor="uploadIDPhoto">Upload or Capture ID Photo</Label>
+              <div className="relative p-[2px] rounded-lg group/input">
+                <Button onClick={() => setIsIDModalOpen(true)} type="button">
+                  {idPhotoStatus || "Take a photo or upload a file"}
+                </Button>
+              </div>
+              {formik.touched.uploadIDPhoto && formik.errors.uploadIDPhoto ? (
+                <div className="text-red-600">
+                  {formik.errors.uploadIDPhoto}
+                </div>
+              ) : null}
+            </LabelInputContainer>
+
+            {isIDModalOpen && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-8 rounded-lg shadow-lg">
+                  <h3 className="text-lg font-medium text-gray-800 mb-4">
+                    Choose an option
+                  </h3>
+                  <Button
+                    onClick={() => {
+                      setIsIDCameraOpen(true);
+                      setIsIDModalOpen(false);
+                    }}
+                    className="w-full mb-4"
+                  >
+                    Capture ID Photo
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                      setIsIDModalOpen(false);
+                    }}
+                    className="w-full"
+                  >
+                    Upload from Device
+                  </Button>
+                  <Button
+                    onClick={() => setIsIDModalOpen(false)}
+                    className="w-full mt-4"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <Input
+              id="uploadIDPhoto"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleIDFileUpload}
+            />
+
+            {isIDCameraOpen && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-8 rounded-lg shadow-lg">
+                  <Webcam
+                    audio={false}
+                    ref={webcamRef}
+                    screenshotFormat="image/jpeg"
+                    videoConstraints={{ facingMode: "user" }}
+                  />
+                  <Button
+                    onClick={handleIDCapturePhoto}
+                    className="mt-4 w-full"
+                  >
+                    Capture ID Photo
+                  </Button>
+                  <Button
+                    onClick={() => setIsIDCameraOpen(false)}
                     className="mt-4 w-full"
                   >
                     Close Camera

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage'; 
 
 const firebaseConfig = {
@@ -17,4 +17,33 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app); 
 
-export { auth, db, storage };
+const fetchMemberCount = async () => {
+  try {
+    const docRef = doc(db, 'metadata', 'memberCountDoc');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data.memberCount;
+    } else {
+      console.log("No such document for member count!");
+      return 0;
+    }
+  } catch (error) {
+    console.error("Error fetching member count:", error);
+    return 0;
+  }
+};
+
+const updateMemberCount = async (newCount) => {
+  try {
+    const docRef = doc(db, 'metadata', 'memberCountDoc');
+    await updateDoc(docRef, {
+      memberCount: newCount,
+    });
+    console.log(`Member count updated to ${newCount}`);
+  } catch (error) {
+    console.error("Error updating member count:", error);
+  }
+};
+
+export { auth, db, storage, fetchMemberCount, updateMemberCount };

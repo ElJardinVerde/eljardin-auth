@@ -38,7 +38,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { CalendarIcon, Users, CreditCard, Search, ChevronLeft } from "lucide-react";
+import {
+  CalendarIcon,
+  Users,
+  CreditCard,
+  Search,
+  ChevronLeft,
+} from "lucide-react";
 
 interface User {
   id: string;
@@ -50,6 +56,7 @@ interface User {
   membershipType?: string;
   paymentMethod?: string;
   membershipActivationDate?: Timestamp;
+  paymentIntentId?: string;
 }
 
 const Spinner: React.FC = () => (
@@ -64,9 +71,11 @@ const DatabaseView: React.FC = () => {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedClub, setSelectedClub] = useState<string>("");
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] =
+    useState<string>("");
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [loading, setLoading] = useState<boolean>(true);
+  const [paymentIntentId, setPaymentIntentId] = useState<string>("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -161,13 +170,13 @@ const DatabaseView: React.FC = () => {
     const searchTerm = event.target.value.toLowerCase();
     setSearchTerm(searchTerm);
     const filtered = users.filter((user) => {
-      const firstName = user.firstName?.toLowerCase() || '';
-      const lastName = user.lastName?.toLowerCase() || '';
-      const email = user.email?.toLowerCase() || '';
-      const club = user.club?.toLowerCase() || '';
-      const country = user.country?.toLowerCase() || '';
-      const membershipType = user.membershipType?.toLowerCase() || '';
-  
+      const firstName = user.firstName?.toLowerCase() || "";
+      const lastName = user.lastName?.toLowerCase() || "";
+      const email = user.email?.toLowerCase() || "";
+      const club = user.club?.toLowerCase() || "";
+      const country = user.country?.toLowerCase() || "";
+      const membershipType = user.membershipType?.toLowerCase() || "";
+
       return (
         firstName.includes(searchTerm) ||
         lastName.includes(searchTerm) ||
@@ -179,6 +188,43 @@ const DatabaseView: React.FC = () => {
     });
     setFilteredUsers(filtered);
     setTimeout(() => setLoading(false), 2000);
+  };
+
+  const searchByTransactionId = async (): Promise<void> => {
+    setLoading(true);
+
+    if (!paymentIntentId.trim()) {
+      alert("Please enter a transaction ID");
+      setLoading(false);
+      return;
+    }
+
+    console.log(`Searching for transaction ID: ${paymentIntentId}`);
+
+    try {
+      const q = query(
+        collection(db, "users"),
+        where("paymentIntentId", "==", paymentIntentId.trim())
+      );
+
+      const querySnapshot = await getDocs(q);
+      const userData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as User[];
+
+      if (userData.length === 0) {
+        console.log("No users found for this transaction ID");
+      } else {
+        console.log("Users found:", userData);
+      }
+
+      setFilteredUsers(userData);
+    } catch (error) {
+      console.error("Error searching by transaction ID:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -193,24 +239,34 @@ const DatabaseView: React.FC = () => {
         <CardContent className="bg-white rounded-b-lg p-6">
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
+              {/* Button to fetch all users */}
               <Button
                 onClick={fetchAllUsers}
                 className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto transition duration-300 ease-in-out"
               >
                 <Users className="mr-2 h-4 w-4" /> All Users
               </Button>
+
+              {/* Club Selection */}
               <Select onValueChange={fetchUsersByClub} value={selectedClub}>
                 <SelectTrigger className="w-full sm:w-40 bg-white text-black border-gray-300">
                   <SelectValue placeholder="Select Club" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="El Jardin Verde">El Jardin Verde</SelectItem>
+                  <SelectItem value="El Jardin Verde">
+                    El Jardin Verde
+                  </SelectItem>
                   <SelectItem value="Club A">Club A</SelectItem>
                   <SelectItem value="Club B">Club B</SelectItem>
                   <SelectItem value="Club C">Club C</SelectItem>
                 </SelectContent>
               </Select>
-              <Select onValueChange={fetchUsersByPaymentMethod} value={selectedPaymentMethod}>
+
+              {/* Payment Method Selection */}
+              <Select
+                onValueChange={fetchUsersByPaymentMethod}
+                value={selectedPaymentMethod}
+              >
                 <SelectTrigger className="w-full sm:w-40 bg-white text-black border-gray-300">
                   <SelectValue placeholder="Payment Method" />
                 </SelectTrigger>
@@ -219,6 +275,8 @@ const DatabaseView: React.FC = () => {
                   <SelectItem value="credit card">Credit Card</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Date Picker for Membership Activation Date */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -241,6 +299,7 @@ const DatabaseView: React.FC = () => {
                   />
                 </PopoverContent>
               </Popover>
+
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <Input
@@ -251,7 +310,26 @@ const DatabaseView: React.FC = () => {
                   className="pl-10 bg-white text-black border-gray-300"
                 />
               </div>
+
+              <div className="relative w-full sm:w-64">
+                <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search by Transaction ID"
+                  value={paymentIntentId}
+                  onChange={(e) => setPaymentIntentId(e.target.value)}
+                  className="pl-10 bg-white text-black border-gray-300"
+                />
+              </div>
+
+              <Button
+                onClick={searchByTransactionId}
+                className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto transition duration-300 ease-in-out"
+              >
+                Search by Transaction ID
+              </Button>
             </div>
+
             {loading ? (
               <Spinner />
             ) : (
@@ -259,30 +337,64 @@ const DatabaseView: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-gray-100">
-                      <TableHead className="font-bold text-black">Name</TableHead>
-                      <TableHead className="font-bold text-black">Email</TableHead>
-                      <TableHead className="font-bold text-black">Club</TableHead>
-                      <TableHead className="font-bold text-black">Country</TableHead>
-                      <TableHead className="font-bold text-black">Membership Type</TableHead>
-                      <TableHead className="font-bold text-black">Payment Method</TableHead>
-                      <TableHead className="font-bold text-black">Activation Date</TableHead>
+                      <TableHead className="font-bold text-black">
+                        Name
+                      </TableHead>
+                      <TableHead className="font-bold text-black">
+                        Email
+                      </TableHead>
+                      <TableHead className="font-bold text-black">
+                        Club
+                      </TableHead>
+                      <TableHead className="font-bold text-black">
+                        Country
+                      </TableHead>
+                      <TableHead className="font-bold text-black">
+                        Membership Type
+                      </TableHead>
+                      <TableHead className="font-bold text-black">
+                        Payment Method
+                      </TableHead>
+                      <TableHead className="font-bold text-black">
+                        Activation Date
+                      </TableHead>
+                      <TableHead className="font-bold text-black">
+                        Payment ID
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredUsers.map((user) => (
-                      <TableRow key={user.id} className="hover:bg-gray-50 transition duration-150 ease-in-out">
+                      <TableRow
+                        key={user.id}
+                        className="hover:bg-gray-50 transition duration-150 ease-in-out"
+                      >
                         <TableCell className="font-medium text-black">{`${user.firstName} ${user.lastName}`}</TableCell>
-                        <TableCell className="text-black">{user.email}</TableCell>
-                        <TableCell className="text-black">{user.club}</TableCell>
-                        <TableCell className="text-black">{user.country}</TableCell>
-                        <TableCell className="text-black">{user.membershipType}</TableCell>
+                        <TableCell className="text-black">
+                          {user.email}
+                        </TableCell>
+                        <TableCell className="text-black">
+                          {user.club}
+                        </TableCell>
+                        <TableCell className="text-black">
+                          {user.country}
+                        </TableCell>
+                        <TableCell className="text-black">
+                          {user.membershipType}
+                        </TableCell>
                         <TableCell className="text-black">
                           <span className="flex items-center">
                             <CreditCard className="mr-2 h-4 w-4 text-blue-600" />
                             {user.paymentMethod}
                           </span>
                         </TableCell>
-                        <TableCell className="text-black">{formatDate(user.membershipActivationDate)}</TableCell>
+                        <TableCell className="text-black">
+                          {formatDate(user.membershipActivationDate)}
+                        </TableCell>
+                        <TableCell className="text-black">
+                          {user.paymentIntentId}
+                        </TableCell>{" "}
+                        {/* New cell for Payment ID */}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -307,7 +419,7 @@ const DatabaseView: React.FC = () => {
         <ChevronLeft className="mr-2 h-4 w-4" /> Back to Dashboard
       </Button>
     </div>
-  );  
+  );
 };
 
 export default DatabaseView;

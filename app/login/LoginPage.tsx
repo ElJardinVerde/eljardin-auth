@@ -20,6 +20,7 @@ import UserInfoCard from "../login/UserData";
 import UpgradeModal from "./UpgradeModal";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
+import MemberCountDisplay from "./DatabaseMembers";
 
 const stripePromise = loadStripe(
   "pk_test_51Ob2fwJPY3RNRZWOPMWKBlqBBlmXxAOOmPK8Oc1q8RYGckaOADrxaHPIARD1NGV3h8PaCrnCsQxLwPCWn7hQdYne00MdCsfgG5"
@@ -275,6 +276,9 @@ export default function LoginPage() {
             <p className="text-center text-gray-600 dark:text-gray-400">
               This is your email used for logging in: {userData.email}
             </p>
+            <div>
+              <MemberCountDisplay />
+            </div>
             <div className="flex justify-center">
               <MembershipCard userData={userData} />
             </div>
