@@ -194,10 +194,10 @@ export function SignUp() {
         const paymentElement = elements.getElement(PaymentElement);
 
         if (!paymentElement) {
-          console.error("Payment Element has not been properly initialized.");
+          console.error("Payment Element has not been properly initialized");
           setSnackbar({
             show: true,
-            message: "Payment form is not ready. Please try again.",
+            message: "Payment form is not ready. Please try again",
             type: "error",
           });
           return;
