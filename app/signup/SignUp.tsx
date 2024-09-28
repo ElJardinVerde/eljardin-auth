@@ -111,6 +111,8 @@ export function SignUp() {
   const [isSpainSelected, setIsSpainSelected] = useState(false);
   const [isTenerifeResident, setIsTenerifeResident] = useState(false);
 
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+
   useEffect(() => {
     async function fetchPaymentSheet() {
       try {
@@ -413,9 +415,11 @@ export function SignUp() {
     setIsModalOpen(false);
   };
 
-  const handleDateSelect = (date: React.SetStateAction<Date | null>) => {
-    setDateOfBirth(date);
-    formik.setFieldValue("dob", date);
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setDateOfBirth(date);
+      setIsPopoverOpen(false);
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -763,10 +767,11 @@ export function SignUp() {
 
           <LabelInputContainer className="mb-4">
             <Label htmlFor="dob">Date of Birth</Label>
-            <Popover>
+            <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  onClick={() => setIsPopoverOpen(true)}
                   className={shadCn(
                     "w-full justify-start text-left font-normal",
                     !dateOfBirth && "text-muted-foreground"
@@ -781,14 +786,10 @@ export function SignUp() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[calc(100vw-0.5rem)] sm:w-auto p-2 mx-1 my-1 mobile-calendar-popover">
-                {" "}
                 <Calendar
                   mode="single"
                   selected={dateOfBirth || undefined}
-                  onSelect={(date: Date | undefined) => {
-                    setDateOfBirth(date || null);
-                    formik.setFieldValue("dob", date || null);
-                  }}
+                  onSelect={handleDateSelect}
                   disabled={(date) =>
                     date > new Date() || date < new Date("1900-01-01")
                   }
