@@ -1085,7 +1085,7 @@ export function SignUp() {
                 }`}
               >
                 Membership Selected: {membership}
-                {paymentStatus === "success" && " - Payment Successful"}
+                {paymentStatus === "success" && " - Payment Successful! Please do not hit the back button and continue with the final registration! "}
                 {paymentStatus === "failed" &&
                   " - Payment Failed. Please try again."}
               </div>
