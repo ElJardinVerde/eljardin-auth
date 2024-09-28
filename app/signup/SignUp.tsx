@@ -37,6 +37,7 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { shadCn } from "@/lib/utils";
 import { DropdownProps, CustomComponents } from "react-day-picker";
+import { PaymentProcessingModal } from "./ModalSpinner";
 
 const stripePromise = loadStripe(
   "pk_live_51Ob2fwJPY3RNRZWOedZj2YIynTY1aEIIP3IapfteD0kdIFYiRIbHAtXa6pCr5juKmjhBm63DpAGEOVLHl79BAJ7E00vQLcWUze"
@@ -83,6 +84,7 @@ export function SignUp() {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [photoStatus, setPhotoStatus] = useState<string>("");
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const options = countryList().getData();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
@@ -218,6 +220,9 @@ export function SignUp() {
           return;
         }
 
+        setIsModalVisible(true);
+        setPaymentStatus("pending");
+
         try {
           const result = await stripe.confirmPayment({
             elements,
@@ -273,51 +278,64 @@ export function SignUp() {
         }
       };
 
+      const handleModalClose = () => {
+        setIsModalVisible(false);
+        setPaymentStatus("pending");
+      };
+
       return (
-        <form
-          onSubmit={handlePaymentSubmission}
-          className="bg-white dark:bg-gray-800 p-4 sm:p-8 rounded-xl shadow-md max-w-xl w-full mx-auto relative"
-          style={{
-            maxHeight: "100vh",
-            overflowY: "auto",
-          }}
-        >
-          <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">
-            Complete your payment for{" "}
-            <span className="text-blue-600 dark:text-blue-400">
-              {selectedMembership}
-            </span>
-          </h3>
-          <div className="mb-6">
-            <PaymentElement className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg w-full" />
-          </div>
-          <div
+        <>
+          <form
+            onSubmit={handlePaymentSubmission}
+            className="bg-white dark:bg-gray-800 p-4 sm:p-8 rounded-xl shadow-md max-w-xl w-full mx-auto relative"
             style={{
-              position: "sticky",
-              bottom: 0,
-              backgroundColor: "white",
-              padding: "1rem",
+              maxHeight: "100vh",
+              overflowY: "auto",
             }}
           >
-            <button
-              type="submit"
-              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={!stripe || !elements}
-            >
-              Submit Payment
-            </button>
-            <button
-              onClick={() => {
-                setIsPaymentModalOpen(false);
-                setSelectedMembership(null);
-                setClientSecret("");
+            <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">
+              Complete your payment for{" "}
+              <span className="text-blue-600 dark:text-blue-400">
+                {selectedMembership}
+              </span>
+            </h3>
+            <div className="mb-6">
+              <PaymentElement className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg w-full" />
+            </div>
+            <div
+              style={{
+                position: "sticky",
+                bottom: 0,
+                backgroundColor: "white",
+                padding: "1rem",
               }}
-              className="w-full py-3 px-4 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out"
             >
-              Cancel
-            </button>
-          </div>
-        </form>
+              <button
+                type="submit"
+                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!stripe || !elements}
+              >
+                Submit Payment
+              </button>
+              <button
+                onClick={() => {
+                  setIsPaymentModalOpen(false);
+                  setSelectedMembership(null);
+                  setClientSecret("");
+                }}
+                className="w-full py-3 px-4 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+          <PaymentProcessingModal
+            isVisible={isModalVisible}
+            status={paymentStatus}
+            onClose={handleModalClose}
+          />
+          Z
+        </>
       );
     };
 
