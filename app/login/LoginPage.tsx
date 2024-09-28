@@ -118,7 +118,7 @@ export default function LoginPage() {
       });
       console.log("User data set successfully");
 
-      const allowedAdminEmails = ["iulianpampu@icloud.com"];
+      const allowedAdminEmails = ["iulianpampu@icloud.com", "alexnemes23@yahoo.com"];
       setIsAdmin(allowedAdminEmails.includes(email));
     } catch (error) {
       console.error("Error fetching user data:", error);
