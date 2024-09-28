@@ -72,7 +72,7 @@ export default function AdminPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        const allowedAdminEmails = ["iulianpampu@icloud.com", "alexnemes23@yahoo.com"];
+        const allowedAdminEmails = ["iulianpampu@icloud.com", "alexnemes23@yahoo.com" ];
         if (!allowedAdminEmails.includes(user.email || "")) {
           router.push("/");
         }

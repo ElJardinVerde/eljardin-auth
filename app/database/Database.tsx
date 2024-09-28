@@ -80,7 +80,7 @@ const DatabaseView: React.FC = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        const allowedEmails = ["iulianpampu@icloud.com"];
+        const allowedEmails = ["iulianpampu@icloud.com", "alexnemes23@yahoo.com"];
         if (!allowedEmails.includes(user.email || "")) {
           router.push("/");
         } else {
