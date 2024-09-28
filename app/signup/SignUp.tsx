@@ -106,6 +106,9 @@ export function SignUp() {
   const [isIDCameraOpen, setIsIDCameraOpen] = useState(false);
   const [isIDModalOpen, setIsIDModalOpen] = useState(false);
 
+  const [isSpainSelected, setIsSpainSelected] = useState(false);
+  const [isTenerifeResident, setIsTenerifeResident] = useState(false);
+
   useEffect(() => {
     async function fetchPaymentSheet() {
       try {
@@ -143,6 +146,18 @@ export function SignUp() {
 
     fetchPaymentSheet();
   }, []);
+
+  const handleCountryChange = (selectedOption: any) => {
+    setCountry(selectedOption);
+    formik.setFieldValue("countryOfResidence", selectedOption);
+
+    if (selectedOption?.label === "Spain") {
+      setIsSpainSelected(true);
+    } else {
+      setIsSpainSelected(false);
+      setIsTenerifeResident(false);
+    }
+  };
 
   const MembershipPaymentModal = () => {
     const [selectedMembership, setSelectedMembership] = useState<string | null>(
@@ -263,8 +278,8 @@ export function SignUp() {
           onSubmit={handlePaymentSubmission}
           className="bg-white dark:bg-gray-800 p-4 sm:p-8 rounded-xl shadow-md max-w-xl w-full mx-auto relative"
           style={{
-            maxHeight: '100vh', 
-            overflowY: 'auto', 
+            maxHeight: "100vh",
+            overflowY: "auto",
           }}
         >
           <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">
@@ -278,10 +293,10 @@ export function SignUp() {
           </div>
           <div
             style={{
-              position: 'sticky',
+              position: "sticky",
               bottom: 0,
-              backgroundColor: 'white', 
-              padding: '1rem',
+              backgroundColor: "white",
+              padding: "1rem",
             }}
           >
             <button
@@ -303,7 +318,7 @@ export function SignUp() {
             </button>
           </div>
         </form>
-      );      
+      );
     };
 
     return (
@@ -445,7 +460,8 @@ export function SignUp() {
         });
         return;
       }
-      if (!paymentSuccess || !paymentIntentId) {
+
+      if (!isTenerifeResident && (!paymentSuccess || !paymentIntentId)) {
         setSnackbar({
           show: true,
           message: "Complete payment to register.",
@@ -476,6 +492,10 @@ export function SignUp() {
           photoURL = await getDownloadURL(storageRef);
         }
 
+        const finalMembership = isTenerifeResident
+          ? "Regular member"
+          : membership;
+
         await addDoc(collection(db, "users"), {
           uid: user.uid,
           firstName: values.firstname,
@@ -494,15 +514,14 @@ export function SignUp() {
             new Date().setFullYear(new Date().getFullYear() + 1)
           ),
           isAdmin: false,
-          membershipType: membership,
-          paymentMethod: "credit card",
-          paymentIntentId: paymentIntentId,
+          membershipType: finalMembership,
+          paymentMethod: isTenerifeResident ? "None" : "credit card",
+          paymentIntentId: isTenerifeResident ? null : paymentIntentId,
         });
 
         setSnackbar({
           show: true,
-          message:
-            "Registration completed! Redirecting to login page. Please wait",
+          message: "Registration completed! Redirecting to login page.",
           type: "success",
         });
         setTimeout(() => {
@@ -518,7 +537,7 @@ export function SignUp() {
         } else {
           setSnackbar({
             show: true,
-            message: "User was not created! Database error! Please try again",
+            message: "User was not created! Database error!",
             type: "error",
           });
         }
@@ -688,7 +707,7 @@ export function SignUp() {
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
       <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
         <h3 className="font-bold text-3xl text-center text-neutral-800 dark:text-neutral-200 pb-6">
-          Welcome to ElJardinVerde!
+          Welcome to El Jardin Verde!
         </h3>
         <p className="text-neutral-600 text-sm max-w-sm mt-2 dark:text-neutral-300">
           Please fill in the form below for official registration to our club!
@@ -816,18 +835,15 @@ export function SignUp() {
               <div className="text-red-600">{formik.errors.placeOfBirth}</div>
             ) : null}
           </LabelInputContainer>
+
           <LabelInputContainer className="mb-4">
             <Label htmlFor="countryOfResidence">Country of Residence</Label>
             <Select
               options={options}
               value={country}
-              onChange={(selectedOption) => {
-                setCountry(selectedOption);
-                formik.setFieldValue("countryOfResidence", selectedOption);
-              }}
+              onChange={handleCountryChange}
               styles={customStyles}
               className="w-full"
-              classNamePrefix="select"
             />
             {formik.touched.countryOfResidence &&
             formik.errors.countryOfResidence ? (
@@ -836,6 +852,23 @@ export function SignUp() {
               </div>
             ) : null}
           </LabelInputContainer>
+
+          {isSpainSelected && (
+            <LabelInputContainer className="mb-4">
+              <div className="flex items-center">
+                <input
+                  id="tenerifeResident"
+                  type="checkbox"
+                  checked={isTenerifeResident}
+                  onChange={() => setIsTenerifeResident(!isTenerifeResident)}
+                  className="mr-2 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <Label htmlFor="tenerifeResident">
+                  If you are a resident of Tenerife, please check this box!
+                </Label>
+              </div>
+            </LabelInputContainer>
+          )}
 
           <LabelInputContainer className="mb-4">
             <Label htmlFor="formOfIdentification">Form of Identification</Label>
@@ -1072,35 +1105,40 @@ export function SignUp() {
               <div className="text-red-600">{formik.errors.retypePassword}</div>
             ) : null}
           </LabelInputContainer>
-          <LabelInputContainer className="mb-4">
-            <Button onClick={() => setIsPaymentModalOpen(true)} type="button">
-              Select Membership and Pay
-            </Button>
-            {membership && (
-              <div
-                className={`${
-                  paymentStatus === "success"
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
-              >
-                Membership Selected: {membership}
-                {paymentStatus === "success" && " - Payment Successful! Please do not hit the back button and continue with the final registration! "}
-                {paymentStatus === "failed" &&
-                  " - Payment Failed. Please try again."}
-              </div>
-            )}
-          </LabelInputContainer>
+
+          {!isTenerifeResident && (
+            <LabelInputContainer className="mb-4">
+              <Button onClick={() => setIsPaymentModalOpen(true)} type="button">
+                Select Membership and Pay
+              </Button>
+              {membership && (
+                <div
+                  className={`${
+                    paymentStatus === "success"
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  Membership Selected: {membership}
+                  {paymentStatus === "success" &&
+                    " - Payment Successful! Please do not hit the back button or refresh the page. Hit the Sign Up button!"}
+                  {paymentStatus === "failed" &&
+                    " - Payment Failed. Please try again."}
+                </div>
+              )}
+            </LabelInputContainer>
+          )}
 
           <button
-            className={`bg-gradient-to-br relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset] ${
-              paymentStatus !== "success" ? "opacity-50 cursor-not-allowed" : ""
+            className={`bg-gradient-to-br from-black to-neutral-600 block w-full text-white rounded-md h-10 font-medium shadow-md ${
+              !isTenerifeResident && paymentStatus !== "success"
+                ? "opacity-50 cursor-not-allowed"
+                : ""
             }`}
             type="submit"
-            disabled={paymentStatus !== "success"}
+            disabled={!isTenerifeResident && paymentStatus !== "success"}
           >
             Sign up &rarr;
-            <BottomGradient />
           </button>
 
           <button
