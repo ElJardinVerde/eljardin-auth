@@ -5,7 +5,6 @@ import { shadCn } from "../lib/utils";
 import { ThemeProvider } from "../app/context/ThemeContext";
 import { Elements } from "@stripe/react-stripe-js";
 
-
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -23,13 +22,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      </head>
       <body
         className={shadCn(
           "min-h-screen font-sans antialiased",
           fontSans.variable
         )}
       >
-          <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
