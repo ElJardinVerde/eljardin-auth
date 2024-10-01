@@ -48,17 +48,29 @@ const MobileDatePicker = dynamic(() => import("react-mobile-datepicker"), {
   ssr: false,
 });
 
-const isOver21 = (dob: Date | null) => {
-  if (!dob) return false;
+const isOver18 = (dob: Date | null) => {
+  if (!dob) {
+    console.log("Date of birth is null.");
+    return false;
+  }
+
   const today = new Date();
   const age = today.getFullYear() - dob.getFullYear();
   const monthDiff = today.getMonth() - dob.getMonth();
   const dayDiff = today.getDate() - dob.getDate();
-  return (
-    age > 21 ||
-    (age === 21 && (monthDiff > 0 || (monthDiff === 0 && dayDiff >= 0)))
-  );
+
+  console.log("Today's Date:", today);
+  console.log("Date of Birth:", dob);
+  console.log("Age based on year difference:", age);
+  console.log("Month difference:", monthDiff);
+  console.log("Day difference:", dayDiff);
+
+  const is18OrOlder = age > 18 || (age === 18 && (monthDiff > 0 || (monthDiff === 0 && dayDiff >= 0)));
+  
+  console.log("Is 18 or older:", is18OrOlder);
+  return is18OrOlder;
 };
+
 
 interface HandlePaymentSubmissionProps {
   clientSecret: string;
@@ -474,10 +486,11 @@ export function SignUp() {
       club: Yup.string().required("Club is required"),
     }),
     onSubmit: async (values) => {
-      if (!isOver21(values.dob)) {
+      console.log("Submitted Date of Birth:", values.dob);
+      if (!isOver18(values.dob)) {
         setSnackbar({
           show: true,
-          message: "You must be over 21 years old to register.",
+          message: "You must be over 18 years old to register.",
           type: "error",
         });
         return;
@@ -493,6 +506,8 @@ export function SignUp() {
       }
 
       try {
+        console.log("Age validation passed: User is over 18.");
+
         const hashedPassword = await bcrypt.hash(values.password, 10);
         const userCredential = await createUserWithEmailAndPassword(
           auth,
