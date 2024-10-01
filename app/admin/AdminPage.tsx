@@ -256,9 +256,8 @@ export default function AdminPage() {
     if (webcamRef.current) {
       const imageSrc = webcamRef.current.getScreenshot();
       setCapturedPhoto(imageSrc);
-      setCapturedImage(imageSrc);
-      setIsStreamActive(false);
       formik.setFieldValue("identification", imageSrc);
+      setIsCameraOpen(false);
     }
   };
 
@@ -597,7 +596,7 @@ export default function AdminPage() {
                 audio={false}
                 ref={webcamRef}
                 screenshotFormat="image/jpeg"
-                videoConstraints={{ facingMode: "user" }}
+                videoConstraints={{ facingMode: { exact: "environment" } }}
               />
             )}
           </div>
@@ -640,7 +639,7 @@ export default function AdminPage() {
                 audio={false}
                 ref={webcamRef}
                 screenshotFormat="image/jpeg"
-                videoConstraints={{ facingMode: "user" }}
+                videoConstraints={{ facingMode: { exact: "environment" } }}
               />
             )}
           </div>
