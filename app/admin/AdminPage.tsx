@@ -68,11 +68,19 @@ export default function AdminPage() {
   const [selectedMembershipType, setSelectedMembershipType] = useState("");
   const [selectedIdentificationTypes, setSelectedIdentificationTypes] =
     useState("");
+  const [capturedIDPhoto, setCapturedIDPhoto] = useState<string | null>(null);
+  const [isIDCameraOpen, setIsIDCameraOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        const allowedAdminEmails = ["iulianpampu@icloud.com", "alexnemes23@yahoo.com", "dahmadrian1@gmail.com", "gabiro_albu@yahoo.com", "eljardinverde.clubsocial@yahoo.com" ];
+        const allowedAdminEmails = [
+          "iulianpampu@icloud.com",
+          "alexnemes23@yahoo.com",
+          "dahmadrian1@gmail.com",
+          "gabiro_albu@yahoo.com",
+          "eljardinverde.clubsocial@yahoo.com",
+        ];
         if (!allowedAdminEmails.includes(user.email || "")) {
           router.push("/");
         }
@@ -96,12 +104,7 @@ export default function AdminPage() {
       });
     }
   };
-  const clubOptions = [
-    { value: "El Jardin Verde", label: "El Jardin Verde" },
-    { value: "Club A", label: "Club A" },
-    { value: "Club B", label: "Club B" },
-    { value: "Club C", label: "Club C" },
-  ];
+  const clubOptions = [{ value: "El Jardin Verde", label: "El Jardin Verde" }];
 
   const membershipOptions = [
     { value: "Regular Membership", label: "Regular Membership - 25 Euro" },
@@ -163,6 +166,14 @@ export default function AdminPage() {
           photoURL = await getDownloadURL(imageRef);
         }
 
+        let idPhotoURL = "";
+        if (capturedIDPhoto) {
+          const idPhotoRef = ref(storage, `userIDPhotos/${user.uid}`);
+          const idResponse = await fetch(capturedIDPhoto);
+          const idBlob = await idResponse.blob();
+          await uploadBytes(idPhotoRef, idBlob);
+          idPhotoURL = await getDownloadURL(idPhotoRef);
+        }
         await addDoc(collection(db, "users"), {
           uid: user.uid,
           email: values.email,
@@ -181,6 +192,7 @@ export default function AdminPage() {
           ),
           isAdmin: false,
           photo: photoURL,
+          idPhoto: idPhotoURL,
           paymentMethod: "cash",
         });
 
@@ -202,6 +214,35 @@ export default function AdminPage() {
       }
     },
   });
+
+  const startIDCamera = () => {
+    setIsIDCameraOpen(true);
+  };
+
+  const handleCloseIDCamera = () => {
+    setIsIDCameraOpen(false);
+  };
+
+  const captureIDPhoto = () => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+      setCapturedIDPhoto(imageSrc);
+      setIsStreamActive(false);
+      formik.setFieldValue("identification", imageSrc);
+    }
+  };
+
+  const handleSaveIDPhoto = () => {
+    if (capturedIDPhoto) {
+      formik.setFieldValue("identification", capturedIDPhoto);
+      handleCloseIDCamera();
+      setSnackbar({
+        show: true,
+        message: "ID Photo saved successfully",
+        type: "success",
+      });
+    }
+  };
 
   const startCamera = async () => {
     setIsCameraOpen(true);
@@ -245,7 +286,6 @@ export default function AdminPage() {
         </h2>
         <form onSubmit={formik.handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left column */}
             <div className="space-y-4">
               <div>
                 <Label htmlFor="email">Email</Label>
@@ -321,7 +361,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Right column */}
             <div className="space-y-4">
               <div>
                 <Label htmlFor="country">Country</Label>
@@ -438,10 +477,9 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Full width elements */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="identification">Identification with ID</Label>
+              <Label htmlFor="identification">User selfie</Label>
               <div className="flex items-center space-x-2">
                 <Button type="button" onClick={startCamera}>
                   <Camera className="w-4 h-4 mr-2" />
@@ -464,6 +502,36 @@ export default function AdminPage() {
                 />
               </div>
             )}
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="identificationID">
+                  Identification ID Photo
+                </Label>
+                <div className="flex items-center space-x-2">
+                  <Button type="button" onClick={startIDCamera}>
+                    <Camera className="w-4 h-4 mr-2" />
+                    Capture ID
+                  </Button>
+                </div>
+                {formik.touched.identification &&
+                formik.errors.identification ? (
+                  <div className="text-red-500">
+                    {formik.errors.identification}
+                  </div>
+                ) : null}
+              </div>
+
+              {capturedIDPhoto && (
+                <div>
+                  <img
+                    src={capturedIDPhoto}
+                    alt="Captured ID"
+                    className="mt-2 max-w-full h-auto"
+                  />
+                </div>
+              )}
+            </div>
 
             <Card>
               <CardContent>
@@ -495,7 +563,11 @@ export default function AdminPage() {
           >
             Back to Dashboard
           </Button>
-          <Button className="w-full" onClick={handleLogout} variant="destructive">
+          <Button
+            className="w-full"
+            onClick={handleLogout}
+            variant="destructive"
+          >
             Logout from admin
           </Button>
         </div>
@@ -545,6 +617,49 @@ export default function AdminPage() {
               </>
             )}
             <Button type="button" onClick={handleCloseCamera}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isIDCameraOpen}
+        onOpenChange={(open) => {
+          if (!open) handleCloseIDCamera();
+          setIsIDCameraOpen(open);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Take ID Picture</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            {isIDCameraOpen && (
+              <Webcam
+                audio={false}
+                ref={webcamRef}
+                screenshotFormat="image/jpeg"
+                videoConstraints={{ facingMode: "user" }}
+              />
+            )}
+          </div>
+          <DialogFooter className="sm:justify-start">
+            {!capturedIDPhoto ? (
+              <Button type="button" onClick={captureIDPhoto}>
+                Take Picture
+              </Button>
+            ) : (
+              <>
+                <Button type="button" onClick={handleSaveIDPhoto}>
+                  Save
+                </Button>
+                <Button type="button" onClick={() => setCapturedIDPhoto(null)}>
+                  Retake
+                </Button>
+              </>
+            )}
+            <Button type="button" onClick={handleCloseIDCamera}>
               Cancel
             </Button>
           </DialogFooter>
