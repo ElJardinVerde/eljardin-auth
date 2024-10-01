@@ -23,6 +23,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import MemberCountDisplay from "./DatabaseMembers";
 import { ModalSpinner } from "@/components/ui/spinner";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
 const stripePromise = loadStripe(
   "pk_live_51Ob2fwJPY3RNRZWOedZj2YIynTY1aEIIP3IapfteD0kdIFYiRIbHAtXa6pCr5juKmjhBm63DpAGEOVLHl79BAJ7E00vQLcWUze"
@@ -350,12 +351,13 @@ export default function LoginPage() {
         ) : (
           <>
             <div className="flex justify-center mb-6">
-              <img
-                src="/eljardinlogo.jpg"
-                alt="El Jardin Logo"
-                className="h-16 w-16"
-              />
-            </div>
+    <Image
+      src="/eljardinlogo.jpg" 
+      alt="El Jardin Logo"
+      width={64}
+      height={64}
+    />
+  </div>
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 text-center mb-8">
               Login to Your Account
             </h2>

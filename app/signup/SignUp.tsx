@@ -755,10 +755,11 @@ export function SignUp() {
 
       <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
         <div className="flex justify-center mb-6">
-          <img
+          <Image
             src="/eljardinlogo.jpg"
             alt="El Jardin Logo"
-            className="h-16 w-16"
+            width={64}
+            height={64}
           />
         </div>
         <h3 className="font-bold text-3xl text-center text-neutral-800 dark:text-neutral-200 pb-6">
