@@ -60,3 +60,14 @@
     padding: 1.5rem; 
   }
 }
+
+.loader {
+  border-top-color: #18ae43; 
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

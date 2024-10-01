@@ -38,6 +38,8 @@ import { format } from "date-fns";
 import { shadCn } from "@/lib/utils";
 import { DropdownProps, CustomComponents } from "react-day-picker";
 import { PaymentProcessingModal } from "./ModalSpinner";
+import { ModalSpinner } from "@/components/ui/spinner";
+import Image from "next/image";
 
 const stripePromise = loadStripe(
   "pk_live_51Ob2fwJPY3RNRZWOedZj2YIynTY1aEIIP3IapfteD0kdIFYiRIbHAtXa6pCr5juKmjhBm63DpAGEOVLHl79BAJ7E00vQLcWUze"
@@ -65,12 +67,13 @@ const isOver18 = (dob: Date | null) => {
   console.log("Month difference:", monthDiff);
   console.log("Day difference:", dayDiff);
 
-  const is18OrOlder = age > 18 || (age === 18 && (monthDiff > 0 || (monthDiff === 0 && dayDiff >= 0)));
-  
+  const is18OrOlder =
+    age > 18 ||
+    (age === 18 && (monthDiff > 0 || (monthDiff === 0 && dayDiff >= 0)));
+
   console.log("Is 18 or older:", is18OrOlder);
   return is18OrOlder;
 };
-
 
 interface HandlePaymentSubmissionProps {
   clientSecret: string;
@@ -83,6 +86,7 @@ export function SignUp() {
   const stripe = useStripe();
   const elements = useElements();
   const [clientSecret, setClientSecret] = useState("");
+  const [isLoadingModal, setIsLoadingModal] = useState(false);
 
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
   const [country, setCountry] = useState<any>(null);
@@ -161,6 +165,11 @@ export function SignUp() {
     }
 
     fetchPaymentSheet();
+  }, []);
+
+  useEffect(() => {
+    setIsLoadingModal(true);
+    setTimeout(() => setIsLoadingModal(false), 3000);
   }, []);
 
   const handleCountryChange = (selectedOption: any) => {
@@ -742,7 +751,16 @@ export function SignUp() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
+      <ModalSpinner isVisible={isLoadingModal} />
+
       <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
+        <div className="flex justify-center mb-6">
+          <img
+            src="/eljardinlogo.jpg"
+            alt="El Jardin Logo"
+            className="h-16 w-16"
+          />
+        </div>
         <h3 className="font-bold text-3xl text-center text-neutral-800 dark:text-neutral-200 pb-6">
           Welcome to El Jardin Verde!
         </h3>

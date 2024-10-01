@@ -21,9 +21,11 @@ import UpgradeModal from "./UpgradeModal";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import MemberCountDisplay from "./DatabaseMembers";
+import { ModalSpinner } from "@/components/ui/spinner";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 const stripePromise = loadStripe(
-  "pk_test_51Ob2fwJPY3RNRZWOPMWKBlqBBlmXxAOOmPK8Oc1q8RYGckaOADrxaHPIARD1NGV3h8PaCrnCsQxLwPCWn7hQdYne00MdCsfgG5"
+  "pk_live_51Ob2fwJPY3RNRZWOedZj2YIynTY1aEIIP3IapfteD0kdIFYiRIbHAtXa6pCr5juKmjhBm63DpAGEOVLHl79BAJ7E00vQLcWUze"
 );
 
 export default function LoginPage() {
@@ -55,6 +57,13 @@ export default function LoginPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [isModalLoading, setIsModalLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    setIsModalLoading(true);
+    setTimeout(() => setIsModalLoading(false), 2000);
+  }, []);
 
   const handleUpgrade = async () => {
     console.log("Opening upgrade modal...");
@@ -118,7 +127,12 @@ export default function LoginPage() {
       });
       console.log("User data set successfully");
 
-      const allowedAdminEmails = ["iulianpampu@icloud.com", "alexnemes23@yahoo.com", "dahmadrian1@gmail.com", "gabiro_albu@yahoo.com"];
+      const allowedAdminEmails = [
+        "iulianpampu@icloud.com",
+        "alexnemes23@yahoo.com",
+        "dahmadrian1@gmail.com",
+        "gabiro_albu@yahoo.com",
+      ];
       setIsAdmin(allowedAdminEmails.includes(email));
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -139,6 +153,7 @@ export default function LoginPage() {
         .min(8, "Password must be at least 8 characters"),
     }),
     onSubmit: async (values) => {
+      setIsModalLoading(true);
       try {
         const userCredential = await signInWithEmailAndPassword(
           auth,
@@ -155,6 +170,7 @@ export default function LoginPage() {
         });
         setTimeout(() => {
           setSnackbar({ show: false, message: "", type: "success" });
+          setIsModalLoading(false);
         }, 4000);
       } catch (error) {
         console.error("Error during login:", error);
@@ -165,6 +181,7 @@ export default function LoginPage() {
         });
         setTimeout(() => {
           setSnackbar({ show: false, message: "", type: "error" });
+          setIsModalLoading(false);
         }, 4000);
       }
     },
@@ -255,6 +272,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
+      <ModalSpinner isVisible={isModalLoading} />
+
       <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
         {userData ? (
           <div className="space-y-10 min-h-screen mt-10">
@@ -330,6 +349,13 @@ export default function LoginPage() {
           </div>
         ) : (
           <>
+            <div className="flex justify-center mb-6">
+              <img
+                src="/eljardinlogo.jpg"
+                alt="El Jardin Logo"
+                className="h-16 w-16"
+              />
+            </div>
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 text-center mb-8">
               Login to Your Account
             </h2>
@@ -352,12 +378,25 @@ export default function LoginPage() {
 
               <LabelInputContainer>
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  placeholder="••••••••"
-                  type="password"
-                  {...formik.getFieldProps("password")}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    placeholder="••••••••"
+                    type={showPassword ? "text" : "password"}
+                    {...formik.getFieldProps("password")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-600"
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
                 {formik.touched.password && formik.errors.password ? (
                   <div className="text-red-600 text-sm">
                     {formik.errors.password}
