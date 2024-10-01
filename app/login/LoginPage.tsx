@@ -133,6 +133,7 @@ export default function LoginPage() {
         "alexnemes23@yahoo.com",
         "dahmadrian1@gmail.com",
         "gabiro_albu@yahoo.com",
+        "eljardinverde.clubsocial@yahoo.com"
       ];
       setIsAdmin(allowedAdminEmails.includes(email));
     } catch (error) {
