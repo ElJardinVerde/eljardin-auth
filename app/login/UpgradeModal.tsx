@@ -62,15 +62,13 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
       ) {
         console.log("Payment succeeded!");
 
-        // Query the users collection to find the document with the matching uid
         const usersCollection = collection(db, "users");
         const q = query(usersCollection, where("uid", "==", userData.uid));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-          const userDoc = querySnapshot.docs[0].ref; // Get the reference to the document
+          const userDoc = querySnapshot.docs[0].ref; 
 
-          // Update the document with the new membership information
           await setDoc(
             userDoc,
             {
