@@ -351,13 +351,13 @@ export default function LoginPage() {
         ) : (
           <>
             <div className="flex justify-center mb-6">
-    <Image
-      src="/eljardinlogo.jpg" 
-      alt="El Jardin Logo"
-      width={64}
-      height={64}
-    />
-  </div>
+              <Image
+                src="/eljardinlogo.JPG"
+                alt="El Jardin Logo"
+                width={64}
+                height={64}
+              />
+            </div>
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 text-center mb-8">
               Login to Your Account
             </h2>

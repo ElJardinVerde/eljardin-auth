@@ -756,7 +756,7 @@ export function SignUp() {
       <div className="max-w-md w-full mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2]">
         <div className="flex justify-center mb-6">
           <Image
-            src="/eljardinlogo.jpg"
+            src="/eljardinlogo.JPG"
             alt="El Jardin Logo"
             width={64}
             height={64}

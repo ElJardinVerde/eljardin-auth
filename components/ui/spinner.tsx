@@ -15,7 +15,7 @@ export const ModalSpinner = ({ isVisible }: { isVisible: boolean }) => {
       <div className="relative flex flex-col items-center">
         <div className="relative h-32 w-32 flex items-center justify-center">
           <Image
-            src="/eljardinlogo.jpg"
+            src="/eljardinlogo.JPG"
             alt="El Jardin Logo"
             width={64} 
             height={64}
