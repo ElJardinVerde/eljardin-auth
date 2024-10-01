@@ -1,6 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LoaderIcon } from "lucide-react"; // Assuming you're using Lucide for icons.
+import { LoaderIcon } from "lucide-react"; 
 
 interface PaymentProcessingModalProps {
   isVisible: boolean;
