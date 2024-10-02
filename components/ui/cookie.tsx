@@ -56,7 +56,7 @@ export default function CookieConsent({
         hide && "hidden"
       )}
     >
-      <div className="dark:bg-card bg-background rounded-md m-3 border border-border shadow-lg">
+      <div className="dark:bg-gray-800 bg-white rounded-md m-3 border border-border shadow-lg">
         <div className="grid gap-2">
           <div className="border-b border-border h-14 flex items-center justify-between p-4">
             <h1 className="text-lg font-medium dark:text-white">
@@ -109,7 +109,7 @@ export default function CookieConsent({
           hide && "hidden"
         )}
       >
-        <div className="m-3 dark:bg-card bg-background border border-border rounded-lg">
+        <div className="m-3 dark:bg-gray-800 bg-white border border-border rounded-lg">
           <div className="flex items-center justify-between p-3">
             <h1 className="text-lg font-medium dark:text-white">
               We use cookies
