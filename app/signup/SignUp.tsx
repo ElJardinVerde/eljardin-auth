@@ -99,6 +99,7 @@ export function SignUp() {
   const [isTenerifeResident, setIsTenerifeResident] = useState(false);
 
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
     async function fetchPaymentSheet() {
@@ -140,7 +141,7 @@ export function SignUp() {
 
   useEffect(() => {
     setIsLoadingModal(true);
-    setTimeout(() => setIsLoadingModal(false), 3000);
+    setTimeout(() => setIsLoadingModal(false), 1000);
   }, []);
 
   const handleCountryChange = (selectedOption: any) => {
@@ -507,6 +508,7 @@ export function SignUp() {
           uid: user.uid,
           firstName: values.firstname,
           lastName: values.lastname,
+          firstNameLower: values.firstname.toLowerCase(),
           dob: values.dob,
           placeOfBirth: values.placeOfBirth,
           country: values.countryOfResidence?.label || "",
@@ -1143,14 +1145,49 @@ export function SignUp() {
             </LabelInputContainer>
           )}
 
+          <LabelInputContainer className="mb-8 mt-8">
+            <div className="flex items-center">
+              <input
+                id="termsAccepted"
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={() => setTermsAccepted(!termsAccepted)}
+                className="mr-2 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <Label htmlFor="termsAccepted">
+                I agree to the{" "}
+                <a
+                  href="/terms"
+                  className="text-blue-600 underline"
+                  target="_blank"
+                >
+                  Terms and Conditions
+                </a>{" "}
+                and{" "}
+                <a
+                  href="/privacy"
+                  className="text-blue-600 underline"
+                  target="_blank"
+                >
+                  Privacy Policy
+                </a>
+                .
+              </Label>
+            </div>
+          </LabelInputContainer>
+
           <button
             className={`bg-gradient-to-br from-black to-neutral-600 block w-full text-white rounded-md h-10 font-medium shadow-md ${
-              !isTenerifeResident && paymentStatus !== "success"
+              (!isTenerifeResident && paymentStatus !== "success") ||
+              !termsAccepted
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             }`}
             type="submit"
-            disabled={!isTenerifeResident && paymentStatus !== "success"}
+            disabled={
+              (!isTenerifeResident && paymentStatus !== "success") ||
+              !termsAccepted
+            }
           >
             Sign up &rarr;
           </button>

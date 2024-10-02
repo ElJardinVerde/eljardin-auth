@@ -45,6 +45,7 @@ import {
   Search,
   ChevronLeft,
 } from "lucide-react";
+import { Snackbar } from "../components/Snackbar";
 
 interface User {
   id: string;
@@ -74,17 +75,32 @@ const DatabaseView: React.FC = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
     useState<string>("");
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [paymentIntentId, setPaymentIntentId] = useState<string>("");
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({
+    show: false,
+    message: "",
+    type: "success",
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        const allowedEmails = ["iulianpampu@icloud.com", "alexnemes23@yahoo.com", "dahmadrian1@gmail.com", "gabiro_albu@yahoo.com", "eljardinverde.clubsocial@yahoo.com"];
+        const allowedEmails = [
+          "iulianpampu@icloud.com",
+          "alexnemes23@yahoo.com",
+          "dahmadrian1@gmail.com",
+          "gabiro_albu@yahoo.com",
+          "eljardinverde.clubsocial@yahoo.com",
+        ];
+        setCurrentUserEmail(user.email || "");
         if (!allowedEmails.includes(user.email || "")) {
           router.push("/");
-        } else {
-          fetchAllUsers();
         }
       } else {
         router.push("/");
@@ -101,6 +117,57 @@ const DatabaseView: React.FC = () => {
     return "N/A";
   };
 
+  const fetchUsersByPaymentMethod = async (
+    paymentMethod: string
+  ): Promise<void> => {
+    setLoading(true);
+    try {
+      const usersRef = collection(db, "users");
+
+      let q;
+      if (paymentMethod === "All") {
+        q = query(usersRef);
+      } else {
+        q = query(usersRef, where("paymentMethod", "==", paymentMethod));
+      }
+
+      const snapshot: QuerySnapshot<DocumentData> = await getDocs(q);
+      const userData: User[] = snapshot.docs.map(
+        (doc) => ({ id: doc.id, ...doc.data() } as User)
+      );
+      setFilteredUsers(userData);
+    } catch (error) {
+      console.error("Error fetching users by payment method:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUsersByDate = async (selectedDate: Date): Promise<void> => {
+    setLoading(true);
+    try {
+      const usersRef = collection(db, "users");
+      const startOfDay = new Date(selectedDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(selectedDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      const q = query(
+        usersRef,
+        where("membershipActivationDate", ">=", startOfDay),
+        where("membershipActivationDate", "<=", endOfDay)
+      );
+      const snapshot: QuerySnapshot<DocumentData> = await getDocs(q);
+      const userData: User[] = snapshot.docs.map(
+        (doc) => ({ id: doc.id, ...doc.data() } as User)
+      );
+      setFilteredUsers(userData);
+    } catch (error) {
+      console.error("Error fetching users by date:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchAllUsers = async (): Promise<void> => {
     setLoading(true);
     try {
@@ -113,88 +180,78 @@ const DatabaseView: React.FC = () => {
       setFilteredUsers(userData);
     } catch (error) {
       console.error("Error fetching users:", error);
+    } finally {
+      setLoading(false);
     }
-    setTimeout(() => setLoading(false), 2000);
   };
 
-  const fetchUsersByClub = async (club: string): Promise<void> => {
-    setLoading(true);
-    const usersRef = collection(db, "users");
-    const q = query(usersRef, where("club", "==", club));
-    const snapshot: QuerySnapshot<DocumentData> = await getDocs(q);
-    const userData: User[] = snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data() } as User)
-    );
-    setFilteredUsers(userData);
-    setSelectedClub(club);
-    setTimeout(() => setLoading(false), 2000);
-  };
-
-  const fetchUsersByPaymentMethod = async (
-    paymentMethod: string
+  const handleSearch = async (
+    event: React.ChangeEvent<HTMLInputElement>
   ): Promise<void> => {
-    setLoading(true);
-    const usersRef = collection(db, "users");
-    const q = query(usersRef, where("paymentMethod", "==", paymentMethod));
-    const snapshot: QuerySnapshot<DocumentData> = await getDocs(q);
-    const userData: User[] = snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data() } as User)
-    );
-    setFilteredUsers(userData);
-    setSelectedPaymentMethod(paymentMethod);
-    setTimeout(() => setLoading(false), 2000);
-  };
+    const inputValue = event.target.value;
+    setSearchTerm(inputValue);
 
-  const fetchUsersByDate = async (selectedDate: Date): Promise<void> => {
-    setLoading(true);
-    const usersRef = collection(db, "users");
-    const startOfDay = new Date(selectedDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(selectedDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    const q = query(
-      usersRef,
-      where("membershipActivationDate", ">=", startOfDay),
-      where("membershipActivationDate", "<=", endOfDay)
-    );
-    const snapshot: QuerySnapshot<DocumentData> = await getDocs(q);
-    const userData: User[] = snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data() } as User)
-    );
-    setFilteredUsers(userData);
-    setTimeout(() => setLoading(false), 2000);
-  };
+    const searchTerm = inputValue.toLowerCase();
 
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    setLoading(true);
-    const searchTerm = event.target.value.toLowerCase();
-    setSearchTerm(searchTerm);
-    const filtered = users.filter((user) => {
-      const firstName = user.firstName?.toLowerCase() || "";
-      const lastName = user.lastName?.toLowerCase() || "";
-      const email = user.email?.toLowerCase() || "";
-      const club = user.club?.toLowerCase() || "";
-      const country = user.country?.toLowerCase() || "";
-      const membershipType = user.membershipType?.toLowerCase() || "";
+    if (currentUserEmail === "iulianpampu@icloud.com") {
+      setLoading(true);
+      try {
+        const usersRef = collection(db, "users");
 
-      return (
-        firstName.includes(searchTerm) ||
-        lastName.includes(searchTerm) ||
-        email.includes(searchTerm) ||
-        club.includes(searchTerm) ||
-        country.includes(searchTerm) ||
-        membershipType.includes(searchTerm)
-      );
-    });
-    setFilteredUsers(filtered);
-    setTimeout(() => setLoading(false), 2000);
+        if (searchTerm) {
+          const q = query(
+            usersRef,
+            where("firstNameLower", ">=", searchTerm),
+            where("firstNameLower", "<=", searchTerm + "\uf8ff")
+          );
+
+          const snapshot: QuerySnapshot<DocumentData> = await getDocs(q);
+          const userData: User[] = snapshot.docs.map(
+            (doc) => ({ id: doc.id, ...doc.data() } as User)
+          );
+
+          setFilteredUsers(userData);
+        } else {
+          setFilteredUsers([]);
+        }
+      } catch (error) {
+        console.error("Error searching users:", error);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setLoading(true);
+      const filtered = users.filter((user) => {
+        const firstName = user.firstName?.toLowerCase() || "";
+        const lastName = user.lastName?.toLowerCase() || "";
+        const email = user.email?.toLowerCase() || "";
+        const club = user.club?.toLowerCase() || "";
+        const country = user.country?.toLowerCase() || "";
+        const membershipType = user.membershipType?.toLowerCase() || "";
+
+        return (
+          firstName.includes(searchTerm) ||
+          lastName.includes(searchTerm) ||
+          email.includes(searchTerm) ||
+          club.includes(searchTerm) ||
+          country.includes(searchTerm) ||
+          membershipType.includes(searchTerm)
+        );
+      });
+      setFilteredUsers(filtered);
+      setLoading(false);
+    }
   };
 
   const searchByTransactionId = async (): Promise<void> => {
     setLoading(true);
 
     if (!paymentIntentId.trim()) {
-      alert("Please enter a transaction ID");
+      setSnackbar({
+        show: true,
+        message: "Please enter a transaction ID",
+        type: "error",
+      });
       setLoading(false);
       return;
     }
@@ -239,67 +296,6 @@ const DatabaseView: React.FC = () => {
         <CardContent className="bg-white rounded-b-lg p-6">
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
-              {/* Button to fetch all users */}
-              <Button
-                onClick={fetchAllUsers}
-                className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto transition duration-300 ease-in-out"
-              >
-                <Users className="mr-2 h-4 w-4" /> All Users
-              </Button>
-
-              {/* Club Selection */}
-              <Select onValueChange={fetchUsersByClub} value={selectedClub}>
-                <SelectTrigger className="w-full sm:w-40 bg-white text-black border-gray-300">
-                  <SelectValue placeholder="Select Club" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="El Jardin Verde">
-                    El Jardin Verde
-                  </SelectItem>
-                  <SelectItem value="Club A">Club A</SelectItem>
-                  <SelectItem value="Club B">Club B</SelectItem>
-                  <SelectItem value="Club C">Club C</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Payment Method Selection */}
-              <Select
-                onValueChange={fetchUsersByPaymentMethod}
-                value={selectedPaymentMethod}
-              >
-                <SelectTrigger className="w-full sm:w-40 bg-white text-black border-gray-300">
-                  <SelectValue placeholder="Payment Method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="credit card">Credit Card</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Date Picker for Membership Activation Date */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className="w-full sm:w-[280px] justify-start text-left font-normal bg-white text-black border-gray-300"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4 text-blue-600" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(newDate) => {
-                      setDate(newDate);
-                      if (newDate) fetchUsersByDate(newDate);
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <Input
@@ -328,6 +324,68 @@ const DatabaseView: React.FC = () => {
               >
                 Search by Transaction ID
               </Button>
+
+              {currentUserEmail !== "eljardinverde.clubsocial@yahoo.com" && (
+                <>
+                  <Button
+                    onClick={fetchAllUsers}
+                    className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto transition duration-300 ease-in-out"
+                  >
+                    <Users className="mr-2 h-4 w-4" /> Load All Users
+                  </Button>
+
+                  <Select onValueChange={setSelectedClub} value={selectedClub}>
+                    <SelectTrigger className="w-full sm:w-40 bg-white text-black border-gray-300">
+                      <SelectValue placeholder="Select Club" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="El Jardin Verde">
+                        El Jardin Verde
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    onValueChange={(value) => {
+                      setSelectedPaymentMethod(value);
+                      fetchUsersByPaymentMethod(value);
+                    }}
+                    value={selectedPaymentMethod}
+                  >
+                    <SelectTrigger className="w-full sm:w-40 bg-white text-black border-gray-300">
+                      <SelectValue placeholder="Payment Method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">All</SelectItem>{" "}
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="credit card">Credit Card</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className="w-full sm:w-[280px] justify-start text-left font-normal bg-white text-black border-gray-300"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4 text-blue-600" />
+                        {date ? format(date, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={(newDate) => {
+                          setDate(newDate);
+                          if (newDate) fetchUsersByDate(newDate);
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </>
+              )}
             </div>
 
             {loading ? (
@@ -393,8 +451,7 @@ const DatabaseView: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-black">
                           {user.paymentIntentId}
-                        </TableCell>{" "}
-                        {/* New cell for Payment ID */}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -418,6 +475,15 @@ const DatabaseView: React.FC = () => {
       >
         <ChevronLeft className="mr-2 h-4 w-4" /> Back to Dashboard
       </Button>
+
+      <Snackbar
+        message={snackbar.message}
+        type={snackbar.type}
+        show={snackbar.show}
+        onClose={() =>
+          setSnackbar({ show: false, message: "", type: "success" })
+        }
+      />
     </div>
   );
 };

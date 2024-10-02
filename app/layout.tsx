@@ -3,7 +3,7 @@ import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
 import { shadCn } from "../lib/utils";
 import { ThemeProvider } from "../app/context/ThemeContext";
-import { Elements } from "@stripe/react-stripe-js";
+import CookieConsent from "@/components/ui/cookie"; // Ensure the import path is correct
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -23,7 +23,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
       </head>
       <body
         className={shadCn(
@@ -31,7 +34,10 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <CookieConsent /> 
+        </ThemeProvider>
       </body>
     </html>
   );

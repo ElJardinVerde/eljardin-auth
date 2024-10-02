@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import Webcam from "react-webcam";
 import { signOut } from "firebase/auth";
+import Image from "next/image";
 
 interface FormValues {
   email: string;
@@ -107,7 +108,7 @@ export default function AdminPage() {
   const clubOptions = [{ value: "El Jardin Verde", label: "El Jardin Verde" }];
 
   const membershipOptions = [
-    { value: "Regular Membership", label: "Regular Membership - 25 Euro" },
+    { value: "Regular member", label: "Regular member - 25 Euro" },
     { value: "VIP Membership", label: "VIP Membership - 50 Euro" },
   ];
 
@@ -178,6 +179,7 @@ export default function AdminPage() {
           uid: user.uid,
           email: values.email,
           firstName: values.firstName,
+          firstNameLower: values.firstName.toLowerCase(),
           lastName: values.lastName,
           club: values.club,
           country: values.country,

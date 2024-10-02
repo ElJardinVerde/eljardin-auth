@@ -63,7 +63,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     setIsModalLoading(true);
-    setTimeout(() => setIsModalLoading(false), 2000);
+    setTimeout(() => setIsModalLoading(false), 1000);
   }, []);
 
   const handleUpgrade = async () => {
@@ -133,7 +133,7 @@ export default function LoginPage() {
         "alexnemes23@yahoo.com",
         "dahmadrian1@gmail.com",
         "gabiro_albu@yahoo.com",
-        "eljardinverde.clubsocial@yahoo.com"
+        "eljardinverde.clubsocial@yahoo.com",
       ];
       setIsAdmin(allowedAdminEmails.includes(email));
     } catch (error) {
@@ -173,7 +173,7 @@ export default function LoginPage() {
         setTimeout(() => {
           setSnackbar({ show: false, message: "", type: "success" });
           setIsModalLoading(false);
-        }, 4000);
+        }, 1500);
       } catch (error) {
         console.error("Error during login:", error);
         setSnackbar({
@@ -184,7 +184,7 @@ export default function LoginPage() {
         setTimeout(() => {
           setSnackbar({ show: false, message: "", type: "error" });
           setIsModalLoading(false);
-        }, 4000);
+        }, 1500);
       }
     },
   });
@@ -325,11 +325,14 @@ export default function LoginPage() {
                   Your QR Code for club access:
                 </h3>
 
-                <img
+                <Image
                   src={qrCode}
                   alt="QR Code"
-                  className="mx-auto mt-4 w-64 h-64"
+                  width={256}
+                  height={256}
+                  className="mx-auto mt-4"
                 />
+
                 <div className="flex justify-center mt-4">
                   <Button className="w-64" onClick={() => setQrCode(null)}>
                     Dismiss

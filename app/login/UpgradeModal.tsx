@@ -67,7 +67,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-          const userDoc = querySnapshot.docs[0].ref; 
+          const userDoc = querySnapshot.docs[0].ref;
 
           await setDoc(
             userDoc,
@@ -112,25 +112,47 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl max-w-md w-full mx-4"
+          className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl max-w-md w-full mx-4 relative"
         >
-          <form onSubmit={handlePaymentSubmission}>
-            <PaymentElement />
-            <Button
-              type="submit"
-              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isProcessing || !stripe || !elements}
+          <form
+            onSubmit={handlePaymentSubmission}
+            className="bg-white dark:bg-gray-800 p-4 sm:p-8 rounded-xl shadow-md max-w-xl w-full mx-auto relative"
+            style={{
+              maxHeight: "100vh",
+              overflowY: "auto",
+            }}
+          >
+            <div className="mb-6">
+              <PaymentElement className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg w-full" />
+            </div>
+            <div
+              style={{
+                position: "sticky",
+                bottom: 0,
+                //backgroundColor: "white",
+                padding: "2rem",
+              }}
             >
-              {isProcessing ? "Processing..." : "Submit Payment"}
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full py-3 px-4 mt-4 border-gray-300 text-gray-600 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-600 dark:border-gray-600 transition duration-200 ease-in-out"
-              onClick={onClose}
-            >
-              Cancel
-            </Button>
+              <Button
+                type="submit"
+                className="w-full py-6 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isProcessing || !stripe || !elements}
+              >
+                {isProcessing ? "Processing..." : "Submit Payment"}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full py-6 px-6 border border-red-600 hover:bg-red-100 transition duration-200 ease-in-out"
+                onClick={onClose}
+                style={{
+                  backgroundColor: "#fff",
+                  color: "#d32f2f",
+                  borderColor: "#d32f2f",
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
           </form>
         </motion.div>
       </motion.div>

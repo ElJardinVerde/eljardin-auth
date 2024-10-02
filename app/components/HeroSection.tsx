@@ -324,7 +324,22 @@ export function Authentification() {
             Login here
           </a>
         </p>
+        <div className="flex flex-col items-center mt-28">
+        <a
+          href="/terms"
+          className="text-sm text-gray-600 dark:text-gray-400 underline"
+        >
+          Terms & Conditions
+        </a>
+        <a
+          href="/privacy"
+          className="text-sm text-gray-600 dark:text-gray-400 underline mt-2"
+        >
+          Privacy Policy
+        </a>
       </div>
+      </div>
+      
     </div>
   );
 }
