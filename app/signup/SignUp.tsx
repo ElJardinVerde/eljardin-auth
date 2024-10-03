@@ -917,7 +917,7 @@ export function SignUp() {
                 {...formik.getFieldProps("club")}
               >
                 <option value="">Select an option</option>
-                <option value="eljardinverde">El Jardin Verde</option>
+                <option value="El Jardin Verde">El Jardin Verde</option>
               </select>
             </div>
             {formik.touched.club && formik.errors.club ? (
