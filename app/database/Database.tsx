@@ -89,6 +89,30 @@ const DatabaseView: React.FC = () => {
   });
 
   useEffect(() => {
+    if (currentUserEmail === "eljardinverde.clubsocial@yahoo.com") {
+      const fetchClubUsers = async () => {
+        setLoading(true);
+        try {
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("club", "==", "El Jardin Verde"));
+          const snapshot = await getDocs(q);
+          const userData = snapshot.docs.map(
+            (doc) => ({ id: doc.id, ...doc.data() } as User)
+          );
+          setUsers(userData);
+          setFilteredUsers(userData);
+        } catch (error) {
+          console.error("Error fetching users for El Jardin Verde:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchClubUsers();
+    }
+  }, [currentUserEmail]);
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         const allowedEmails = [
@@ -101,6 +125,8 @@ const DatabaseView: React.FC = () => {
         setCurrentUserEmail(user.email || "");
         if (!allowedEmails.includes(user.email || "")) {
           router.push("/");
+        } else if (user.email === "eljardinverde.clubsocial@yahoo.com") {
+          fetchClubUsers();
         }
       } else {
         router.push("/");
@@ -109,6 +135,25 @@ const DatabaseView: React.FC = () => {
 
     return () => unsubscribe();
   }, [router]);
+
+
+  const fetchClubUsers = async (): Promise<void> => {
+    setLoading(true);
+    try {
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("club", "==", "El Jardin Verde"));
+      const snapshot: QuerySnapshot<DocumentData> = await getDocs(q);
+      const userData: User[] = snapshot.docs.map(
+        (doc) => ({ id: doc.id, ...doc.data() } as User)
+      );
+      setUsers(userData);
+      setFilteredUsers(userData);
+    } catch (error) {
+      console.error("Error fetching users for El Jardin Verde:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatDate = (date: Timestamp | undefined): string => {
     if (date && typeof date.toDate === "function") {
@@ -193,17 +238,30 @@ const DatabaseView: React.FC = () => {
 
     const searchTerm = inputValue.toLowerCase();
 
-    if (currentUserEmail === "iulianpampu@icloud.com") {
+    if (
+      currentUserEmail === "iulianpampu@icloud.com" ||
+      currentUserEmail === "eljardinverde.clubsocial@yahoo.com"
+    ) {
       setLoading(true);
       try {
         const usersRef = collection(db, "users");
 
         if (searchTerm) {
-          const q = query(
-            usersRef,
-            where("firstNameLower", ">=", searchTerm),
-            where("firstNameLower", "<=", searchTerm + "\uf8ff")
-          );
+          let q;
+          if (currentUserEmail === "eljardinverde.clubsocial@yahoo.com") {
+            q = query(
+              usersRef,
+              where("club", "==", "El Jardin Verde"),
+              where("firstNameLower", ">=", searchTerm),
+              where("firstNameLower", "<=", searchTerm + "\uf8ff")
+            );
+          } else {
+            q = query(
+              usersRef,
+              where("firstNameLower", ">=", searchTerm),
+              where("firstNameLower", "<=", searchTerm + "\uf8ff")
+            );
+          }
 
           const snapshot: QuerySnapshot<DocumentData> = await getDocs(q);
           const userData: User[] = snapshot.docs.map(
