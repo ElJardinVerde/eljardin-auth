@@ -411,6 +411,7 @@ export function SignUp() {
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setDateOfBirth(date);
+      formik.setFieldValue("dob", date);
       setIsPopoverOpen(false);
     }
   };
@@ -1179,14 +1180,18 @@ export function SignUp() {
           <button
             className={`bg-gradient-to-br from-black to-neutral-600 block w-full text-white rounded-md h-10 font-medium shadow-md ${
               (!isTenerifeResident && paymentStatus !== "success") ||
-              !termsAccepted
+              !termsAccepted ||
+              !formik.isValid ||
+              !formik.dirty
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             }`}
             type="submit"
             disabled={
               (!isTenerifeResident && paymentStatus !== "success") ||
-              !termsAccepted
+              !termsAccepted ||
+              !formik.isValid ||
+              !formik.dirty
             }
           >
             Sign up &rarr;
