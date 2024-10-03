@@ -325,7 +325,7 @@ const DatabaseView: React.FC = () => {
                 Search by Transaction ID
               </Button>
 
-              {currentUserEmail !== "iulianpampu@icloud.com" && (
+              {currentUserEmail !== "eljardinverde.clubsocial@yahoo.com" && (
                 <>
                   <Button
                     onClick={fetchAllUsers}
