@@ -467,6 +467,7 @@ export function SignUp() {
         .oneOf([Yup.ref("password")], "Passwords must match"),
       club: Yup.string().required("Club is required"),
     }),
+    validateOnMount: true,
     onSubmit: async (values) => {
       if (!isTenerifeResident && (!paymentSuccess || !paymentIntentId)) {
         setSnackbar({
