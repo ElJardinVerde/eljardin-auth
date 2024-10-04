@@ -467,7 +467,7 @@ export function SignUp() {
         .oneOf([Yup.ref("password")], "Passwords must match"),
       club: Yup.string().required("Club is required"),
     }),
-    validateOnMount: true,
+    //validateOnMount: true,
     onSubmit: async (values) => {
       if (!isTenerifeResident && (!paymentSuccess || !paymentIntentId)) {
         setSnackbar({
@@ -1181,18 +1181,14 @@ export function SignUp() {
           <button
             className={`bg-gradient-to-br from-black to-neutral-600 block w-full text-white rounded-md h-10 font-medium shadow-md ${
               (!isTenerifeResident && paymentStatus !== "success") ||
-              !termsAccepted ||
-              !formik.isValid ||
-              !formik.dirty
+              !termsAccepted
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             }`}
             type="submit"
             disabled={
               (!isTenerifeResident && paymentStatus !== "success") ||
-              !termsAccepted ||
-              !formik.isValid ||
-              !formik.dirty
+              !termsAccepted
             }
           >
             Sign up &rarr;
