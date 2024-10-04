@@ -476,7 +476,14 @@ export function SignUp() {
         });
         return;
       }
-
+      if (!values.dob) {
+        setSnackbar({
+          show: true,
+          message: "Date of birth is required",
+          type: "error",
+        });
+        return;
+      }
       try {
         console.log("Age validation passed: User is over 18.");
 
