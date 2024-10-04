@@ -443,7 +443,7 @@ export function SignUp() {
     validationSchema: Yup.object({
       firstname: Yup.string().required("First name is required"),
       lastname: Yup.string().required("Last name is required"),
-      dob: Yup.date().required("Date of birth is required").nullable(),
+      dob: Yup.date().required("Date of birth is required"),
       placeOfBirth: Yup.string().required("Place of birth is required"),
       countryOfResidence: Yup.object({
         label: Yup.string().required(),
@@ -467,7 +467,6 @@ export function SignUp() {
         .oneOf([Yup.ref("password")], "Passwords must match"),
       club: Yup.string().required("Club is required"),
     }),
-    //validateOnMount: true,
     onSubmit: async (values) => {
       if (!isTenerifeResident && (!paymentSuccess || !paymentIntentId)) {
         setSnackbar({
