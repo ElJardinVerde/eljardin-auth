@@ -146,7 +146,6 @@ export default function AdminPage() {
       selfie: "",
       idPhoto: "",
     },
-
     validationSchema: Yup.object({
       email: Yup.string().email("Invalid email address").required("Required"),
       password: Yup.string()
@@ -232,6 +231,8 @@ export default function AdminPage() {
         });
       }
     },
+    validateOnChange: true,
+    validateOnBlur: true,
   });
 
   const startIDCamera = () => {
@@ -247,6 +248,7 @@ export default function AdminPage() {
       const imageSrc = webcamRef.current.getScreenshot();
       setCapturedIDPhoto(imageSrc);
       formik.setFieldValue("idPhoto", imageSrc);
+      formik.setTouched({ ...formik.touched, idPhoto: true });
       setIsStreamActive(false);
     }
   };
@@ -276,6 +278,7 @@ export default function AdminPage() {
       const imageSrc = webcamRef.current.getScreenshot();
       setCapturedImage(imageSrc);
       formik.setFieldValue("selfie", imageSrc);
+      formik.setTouched({ ...formik.touched, selfie: true });
       setIsCameraOpen(false);
     }
   };
@@ -297,10 +300,10 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    console.log('Formik values:', formik.values);
-    console.log('Formik errors:', formik.errors);
+    console.log("Formik values:", formik.values);
+    console.log("Formik errors:", formik.errors);
   }, [formik.values, formik.errors]);
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2] p-4">
       <div className="w-full max-w-4xl mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2] shadow-xl">
@@ -562,7 +565,7 @@ export default function AdminPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={!formik.isValid}
+              disabled={!formik.isValid || formik.isSubmitting}
             >
               Add User
             </Button>
