@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/dialog";
 import Webcam from "react-webcam";
 import { signOut } from "firebase/auth";
-import Image from "next/image";
 
 interface FormValues {
   email: string;
@@ -48,6 +47,8 @@ interface FormValues {
   identificationType: string;
   membershipType: string;
   placeOfBirth: string;
+  selfie: string;
+  idPhoto: string;
 }
 
 export default function AdminPage() {
@@ -92,6 +93,15 @@ export default function AdminPage() {
     return () => unsubscribe();
   }, [router]);
 
+  useEffect(() => {
+    if (snackbar.show) {
+      const timer = setTimeout(() => {
+        setSnackbar({ ...snackbar, show: false });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [snackbar]);
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -133,7 +143,10 @@ export default function AdminPage() {
       identificationType: "",
       membershipType: "",
       placeOfBirth: "",
+      selfie: "",
+      idPhoto: "",
     },
+
     validationSchema: Yup.object({
       email: Yup.string().email("Invalid email address").required("Required"),
       password: Yup.string()
@@ -148,6 +161,8 @@ export default function AdminPage() {
       identificationType: Yup.string().required("Required"),
       membershipType: Yup.string().required("Required"),
       placeOfBirth: Yup.string().required("Required"),
+      selfie: Yup.string().required("Selfie is required"),
+      idPhoto: Yup.string().required("ID Photo is required"),
     }),
     onSubmit: async (values) => {
       try {
@@ -159,22 +174,24 @@ export default function AdminPage() {
         const user = userCredential.user;
 
         let photoURL = "";
-        if (capturedImage) {
-          const imageRef = ref(storage, `userPhotos/${user.uid}`);
-          const response = await fetch(capturedImage);
+        let idPhotoURL = "";
+
+        if (values.selfie) {
+          const imageRef = ref(storage, `userPhotos/${user.uid}-selfie`);
+          const response = await fetch(values.selfie);
           const blob = await response.blob();
           await uploadBytes(imageRef, blob);
           photoURL = await getDownloadURL(imageRef);
         }
 
-        let idPhotoURL = "";
-        if (capturedIDPhoto) {
-          const idPhotoRef = ref(storage, `userIDPhotos/${user.uid}`);
-          const idResponse = await fetch(capturedIDPhoto);
+        if (values.idPhoto) {
+          const idPhotoRef = ref(storage, `userIDPhotos/${user.uid}-id`);
+          const idResponse = await fetch(values.idPhoto);
           const idBlob = await idResponse.blob();
           await uploadBytes(idPhotoRef, idBlob);
           idPhotoURL = await getDownloadURL(idPhotoRef);
         }
+
         await addDoc(collection(db, "users"), {
           uid: user.uid,
           email: values.email,
@@ -205,7 +222,7 @@ export default function AdminPage() {
         });
         formik.resetForm();
         setCapturedImage(null);
-        setCapturedPhoto(null);
+        setCapturedIDPhoto(null);
       } catch (error) {
         console.error("Error adding new user:", error);
         setSnackbar({
@@ -229,14 +246,14 @@ export default function AdminPage() {
     if (webcamRef.current) {
       const imageSrc = webcamRef.current.getScreenshot();
       setCapturedIDPhoto(imageSrc);
+      formik.setFieldValue("idPhoto", imageSrc);
       setIsStreamActive(false);
-      formik.setFieldValue("identification", imageSrc);
     }
   };
 
   const handleSaveIDPhoto = () => {
     if (capturedIDPhoto) {
-      formik.setFieldValue("identification", capturedIDPhoto);
+      formik.setFieldValue("idPhoto", capturedIDPhoto);
       handleCloseIDCamera();
       setSnackbar({
         show: true,
@@ -257,15 +274,15 @@ export default function AdminPage() {
   const capturePhoto = () => {
     if (webcamRef.current) {
       const imageSrc = webcamRef.current.getScreenshot();
-      setCapturedPhoto(imageSrc);
-      formik.setFieldValue("identification", imageSrc);
+      setCapturedImage(imageSrc);
+      formik.setFieldValue("selfie", imageSrc);
       setIsCameraOpen(false);
     }
   };
 
   const handleSavePhoto = () => {
     if (capturedImage) {
-      formik.setFieldValue("identification", capturedImage);
+      formik.setFieldValue("selfie", capturedImage);
       stopCamera();
       setSnackbar({
         show: true,
@@ -487,10 +504,8 @@ export default function AdminPage() {
                   Camera
                 </Button>
               </div>
-              {formik.touched.identification && formik.errors.identification ? (
-                <div className="text-red-500">
-                  {formik.errors.identification}
-                </div>
+              {formik.touched.selfie && formik.errors.selfie ? (
+                <div className="text-red-500">{formik.errors.selfie}</div>
               ) : null}
             </div>
 
@@ -515,11 +530,8 @@ export default function AdminPage() {
                     Capture ID
                   </Button>
                 </div>
-                {formik.touched.identification &&
-                formik.errors.identification ? (
-                  <div className="text-red-500">
-                    {formik.errors.identification}
-                  </div>
+                {formik.touched.idPhoto && formik.errors.idPhoto ? (
+                  <div className="text-red-500">{formik.errors.idPhoto}</div>
                 ) : null}
               </div>
 
