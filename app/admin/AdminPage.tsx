@@ -43,7 +43,6 @@ interface FormValues {
   club: string;
   country: string;
   dob: string;
-  identification: string;
   identificationType: string;
   membershipType: string;
   placeOfBirth: string;
@@ -139,13 +138,13 @@ export default function AdminPage() {
       club: "",
       country: "",
       dob: "",
-      identification: "",
       identificationType: "",
       membershipType: "",
       placeOfBirth: "",
       selfie: "",
       idPhoto: "",
     },
+
     validationSchema: Yup.object({
       email: Yup.string().email("Invalid email address").required("Required"),
       password: Yup.string()
@@ -156,13 +155,13 @@ export default function AdminPage() {
       club: Yup.string().required("Required"),
       country: Yup.string().required("Required"),
       dob: Yup.date().required("Date of birth is required"),
-      identification: Yup.string().required("Required"),
       identificationType: Yup.string().required("Required"),
       membershipType: Yup.string().required("Required"),
       placeOfBirth: Yup.string().required("Required"),
       selfie: Yup.string().required("Selfie is required"),
       idPhoto: Yup.string().required("ID Photo is required"),
     }),
+
     onSubmit: async (values) => {
       try {
         const userCredential = await createUserWithEmailAndPassword(
@@ -200,7 +199,6 @@ export default function AdminPage() {
           club: values.club,
           country: values.country,
           dob: new Date(values.dob),
-          identification: values.identification,
           identificationType: values.identificationType,
           membershipType: values.membershipType,
           placeOfBirth: values.placeOfBirth,
@@ -303,6 +301,12 @@ export default function AdminPage() {
     console.log("Formik values:", formik.values);
     console.log("Formik errors:", formik.errors);
   }, [formik.values, formik.errors]);
+
+  {
+    process.env.NODE_ENV === "development" && (
+      <pre>{JSON.stringify(formik, null, 2)}</pre>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2] p-4">
@@ -509,7 +513,7 @@ export default function AdminPage() {
               <div className="flex items-center space-x-2">
                 <Button type="button" onClick={startCamera}>
                   <Camera className="w-4 h-4 mr-2" />
-                  Camera
+                  Camera for selfie
                 </Button>
               </div>
               {formik.touched.selfie && formik.errors.selfie ? (
