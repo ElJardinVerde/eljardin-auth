@@ -156,7 +156,7 @@ export default function AdminPage() {
       lastName: Yup.string().required("Required"),
       club: Yup.string().required("Required"),
       country: Yup.string().required("Required"),
-      dob: Yup.date().required("Date of birth is required").nullable(),
+      dob: Yup.date().required("Date of birth is required"),
       identification: Yup.string().required("Required"),
       identificationType: Yup.string().required("Required"),
       membershipType: Yup.string().required("Required"),
@@ -296,6 +296,11 @@ export default function AdminPage() {
     stopCamera();
   };
 
+  useEffect(() => {
+    console.log('Formik values:', formik.values);
+    console.log('Formik errors:', formik.errors);
+  }, [formik.values, formik.errors]);
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black dark:bg-dot-white/[0.2] bg-dot-black/[0.2] p-4">
       <div className="w-full max-w-4xl mx-auto rounded-lg bg-white dark:bg-black p-8 dark:bg-dot-white/[0.2] bg-dot-black/[0.2] shadow-xl">
