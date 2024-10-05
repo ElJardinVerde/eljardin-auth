@@ -143,7 +143,7 @@ export default function AdminPage() {
       lastName: Yup.string().required("Required"),
       club: Yup.string().required("Required"),
       country: Yup.string().required("Required"),
-      dob: Yup.date().required("Required"),
+      dob: Yup.date().required("Date of birth is required").nullable(),
       identification: Yup.string().required("Required"),
       identificationType: Yup.string().required("Required"),
       membershipType: Yup.string().required("Required"),
@@ -542,7 +542,11 @@ export default function AdminPage() {
               </CardContent>
             </Card>
 
-            <Button type="submit" className="w-full">
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={!formik.isValid || formik.isSubmitting}
+            >
               Add User
             </Button>
           </div>
