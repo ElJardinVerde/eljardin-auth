@@ -562,7 +562,7 @@ export default function AdminPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={!formik.isValid || formik.isSubmitting}
+              disabled={!formik.isValid}
             >
               Add User
             </Button>
