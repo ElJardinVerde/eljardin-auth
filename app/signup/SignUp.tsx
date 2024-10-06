@@ -46,9 +46,7 @@ const stripePromise = loadStripe(
 );
 
 const Select = dynamic(() => import("react-select"), { ssr: false });
-const MobileDatePicker = dynamic(() => import("react-mobile-datepicker"), {
-  ssr: false,
-});
+
 
 export function SignUp() {
   const { theme } = useTheme();
@@ -101,6 +99,10 @@ export function SignUp() {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  const handleBackClick = () => {
+    router.push("/");
+  };
+  
   useEffect(() => {
     async function fetchPaymentSheet() {
       try {
@@ -433,8 +435,8 @@ export function SignUp() {
       placeOfBirth: "",
       countryOfResidence: null as { label: string; value: string } | null,
       formOfIdentification: "",
-      uploadPhoto: null as File | string | null,
-      uploadIDPhoto: null as File | string | null,
+      uploadPhoto: null,
+      uploadIDPhoto: null,
       email: "",
       password: "",
       retypePassword: "",
@@ -497,15 +499,30 @@ export function SignUp() {
 
         let photoURL = "";
         if (values.uploadPhoto) {
-          const storageRef = ref(storage, `user_photos/${user.uid}`);
+          const imageRef = ref(storage, `userPhotos/${user.uid}-selfie`);
+          let blob;
           if (typeof values.uploadPhoto === "string") {
             const response = await fetch(values.uploadPhoto);
-            const blob = await response.blob();
-            await uploadBytes(storageRef, blob);
+            blob = await response.blob();
           } else {
-            await uploadBytes(storageRef, values.uploadPhoto);
+            blob = values.uploadPhoto;
           }
-          photoURL = await getDownloadURL(storageRef);
+          await uploadBytes(imageRef, blob);
+          photoURL = await getDownloadURL(imageRef);
+        }
+
+        let idPhotoURL = "";
+        if (values.uploadIDPhoto) {
+          const idPhotoRef = ref(storage, `userIDPhotos/${user.uid}-id`);
+          let idBlob;
+          if (typeof values.uploadIDPhoto === "string") {
+            const idResponse = await fetch(values.uploadIDPhoto);
+            idBlob = await idResponse.blob();
+          } else {
+            idBlob = values.uploadIDPhoto;
+          }
+          await uploadBytes(idPhotoRef, idBlob);
+          idPhotoURL = await getDownloadURL(idPhotoRef);
         }
 
         const finalMembership = isTenerifeResident
@@ -523,7 +540,7 @@ export function SignUp() {
           identification: values.formOfIdentification,
           email: values.email,
           photo: photoURL,
-          idPhoto: capturedIDPhoto,
+          idPhoto: idPhotoURL,
           password: hashedPassword,
           club: values.club,
           membershipActivationDate: new Date(),
@@ -571,10 +588,6 @@ export function SignUp() {
       setIsCameraOpen(false);
     }
   }, [webcamRef, formik]);
-
-  const handleBackClick = () => {
-    router.push("/");
-  };
 
   const handleIDCapturePhoto = useCallback(() => {
     if (webcamRef.current) {
